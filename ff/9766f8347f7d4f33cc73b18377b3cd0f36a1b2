@@ -1,0 +1,47 @@
+.gitignore
+  s_9dee58de4c4c84::t_861e4729092390 1-6
+.node-version
+  s_9dee58de4c4c84::t_6420a73d74e074 1
+.npmrc
+  s_9dee58de4c4c84::t_308ae16a85295e 1
+apps/playground/src/client.tsx
+  s_9dee58de4c4c84::t_bffa282e06af23 1-81
+apps/playground/src/styles.css
+  s_9dee58de4c4c84::t_9e3c0e62358eee 1-105
+apps/playground/src/styles.d.ts
+  s_9dee58de4c4c84::t_94bda5e846ea1c 1
+packages/react/.storybook/preview.tsx
+  s_9dee58de4c4c84::t_605583950e60fb 1-19
+packages/react/src/storybook.css
+  s_9dee58de4c4c84::t_23dbf3b0cd51e0 1-4
+packages/react/src/styles.css
+  s_9dee58de4c4c84::t_55d35c9555d33e 1-125
+packages/react/src/tool-call.stories.tsx
+  s_9dee58de4c4c84::t_1e6eece93d0b6d 1-58
+packages/react/src/tool-call.test.tsx
+  s_9dee58de4c4c84::t_cf875e0250b726 1-39
+packages/react/src/tool-call.tsx
+  s_9dee58de4c4c84::t_4c15153faec1a9 1-117
+packages/react/tsconfig.json
+  s_9dee58de4c4c84::t_fd99d78dc4516f 1-7
+pnpm-workspace.yaml
+  s_9dee58de4c4c84::t_537280d7ae78eb 1-8
+tsconfig.json
+  s_9dee58de4c4c84::t_ea2163abfa52fa 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ff9766f8347f7d4f33cc73b18377b3cd0f36a1b2",
+  "prompts": {},
+  "sessions": {
+    "s_9dee58de4c4c84": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04861648affeqEh5nVN7M3vlDL",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
