@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agent-ui-playground",
+  "main": "src/server.ts",
+  "compatibility_date": "2026-08-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/agents/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ToolDemoAgent",
+        "class_name": "ToolDemoAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ToolDemoAgent"]
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true
+}

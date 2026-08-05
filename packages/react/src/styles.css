@@ -1,0 +1,125 @@
+.agent-ui-tool-call {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-kumo-line, #d9d9d9);
+  border-radius: 14px;
+  background: var(--color-kumo-base, #fff);
+  color: var(--color-kumo-default, #282828);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.agent-ui-tool-call__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+}
+
+.agent-ui-tool-call__identity {
+  min-width: 0;
+}
+
+.agent-ui-tool-call__eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-kumo-subtle, #737373);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.agent-ui-tool-call__name {
+  overflow: hidden;
+  margin: 0;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-ui-tool-call__status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-ui-tool-call__description {
+  padding: 0 16px 16px;
+  color: var(--color-kumo-subtle, #666);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.agent-ui-tool-call__details {
+  border-top: 1px solid var(--color-kumo-line, #e5e5e5);
+}
+
+.agent-ui-tool-call__details summary {
+  padding: 10px 16px;
+  color: var(--color-kumo-subtle, #666);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  list-style-position: inside;
+  user-select: none;
+}
+
+.agent-ui-tool-call__details summary:hover {
+  background: var(--color-kumo-tint, rgb(0 0 0 / 3%));
+  color: var(--color-kumo-strong, #111);
+}
+
+.agent-ui-tool-call__details-body {
+  display: grid;
+  gap: 12px;
+  padding: 4px 16px 16px;
+}
+
+.agent-ui-tool-call__details-body h4 {
+  margin: 0 0 6px;
+  color: var(--color-kumo-subtle, #666);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.agent-ui-tool-call__details-body pre {
+  overflow-x: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--color-kumo-recessed, #f5f5f5);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.agent-ui-tool-call__error {
+  color: var(--color-kumo-danger, #b42318);
+  font-size: 13px;
+}
+
+.agent-ui-tool-call__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-kumo-line, #e5e5e5);
+  background: var(--color-kumo-recessed, #fafafa);
+}
+
+@media (max-width: 480px) {
+  .agent-ui-tool-call__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

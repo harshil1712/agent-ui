@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@cloudflare/kumo/styles/tailwind";
+@import "./styles.css";
+@source "../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
