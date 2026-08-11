@@ -6,3 +6,14 @@ allowBuilds:
   core-js-pure: true
   esbuild: true
   workerd: true
+
+overrides:
+  '@hono/node-server': ^2.0.5
+  undici: ^7.29.0
+
+minimumReleaseAgeExclude:
+  - '@ai-sdk/gateway@4.0.47'
+  - '@ai-sdk/mcp@2.0.30'
+  - '@ai-sdk/provider-utils@5.0.26'
+  - '@ai-sdk/react@4.0.62'
+  - ai@7.0.59

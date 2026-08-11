@@ -3,7 +3,13 @@ import dts from "vite-plugin-dts";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [react(), dts({ include: ["src"] })],
+  plugins: [
+    react(),
+    dts({
+      include: ["src"],
+      exclude: ["src/**/*.stories.*", "src/**/*.test.*", "src/test"]
+    })
+  ],
   build: {
     lib: {
       entry: {
@@ -21,6 +27,9 @@ export default defineConfig({
         "react/jsx-runtime",
         "@cloudflare/kumo",
         "@phosphor-icons/react",
+        "@tanstack/markdown",
+        "@tanstack/markdown/extensions/streaming",
+        "@tanstack/markdown/react",
         "ai"
       ]
     }

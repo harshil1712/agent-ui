@@ -11,12 +11,13 @@
     "types": "wrangler types worker-configuration.d.ts --include-runtime false"
   },
   "dependencies": {
-    "@agent-ui/react": "workspace:*",
+    "@harshil1712/agent-ui": "workspace:*",
+    "@ai-sdk/react": "^4.0.62",
     "@cloudflare/ai-chat": "^0.10.1",
     "@cloudflare/kumo": "^2.9.1",
     "@phosphor-icons/react": "^2.1.10",
     "agents": "^0.20.1",
-    "ai": "^7.0.58",
+    "ai": "^7.0.59",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "workers-ai-provider": "^4.0.0",

@@ -6,7 +6,7 @@ React components for agentic applications, built with Cloudflare Kumo and demons
 
 ```text
 apps/playground/   Cloudflare Worker, Durable Object Agent, and React demo
-packages/react/    Publishable @agent-ui/react component library
+packages/react/    Publishable @harshil1712/agent-ui component library
 ```
 
 ## Commands
@@ -22,7 +22,7 @@ pnpm test          Run component tests
 pnpm build         Build the library and playground
 ```
 
-Run `pnpm --filter @agent-ui/react build-storybook` to verify the static Storybook build. Run `pnpm --filter @agent-ui/playground types` after changing bindings in `wrangler.jsonc`.
+Run `pnpm --filter @harshil1712/agent-ui build-storybook` to verify the static Storybook build. Run `pnpm --filter @agent-ui/playground types` after changing bindings in `wrangler.jsonc`.
 
 ## Component Architecture
 
@@ -76,7 +76,7 @@ Before considering a change complete, run:
 pnpm check
 pnpm test
 pnpm build
-pnpm --filter @agent-ui/react build-storybook
+pnpm --filter @harshil1712/agent-ui build-storybook
 ```
 
 For visual or interactive changes, also test the playground on desktop and mobile and exercise the affected state transitions in a browser.

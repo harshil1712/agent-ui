@@ -1,0 +1,42 @@
+name: Deploy Playground
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/playground/**
+      - packages/react/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-playground.yml
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-playground
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @agent-ui/playground check
+      - run: pnpm --filter @agent-ui/playground build
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_PLAYGROUND }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/playground
+          command: deploy

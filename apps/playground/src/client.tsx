@@ -1,10 +1,10 @@
-import "@agent-ui/react/styles";
+import "@harshil1712/agent-ui/styles";
 import "./styles.css";
 
 import { Button, Text } from "@cloudflare/kumo";
 import { TrashIcon } from "@phosphor-icons/react";
-import { AgentComposer } from "@agent-ui/react";
-import { AgentChat, useAgentChatUI, useAgentComposer } from "@agent-ui/react/agents";
+import { AgentComposer } from "@harshil1712/agent-ui";
+import { AgentChat, useAgentChatUI, useAgentComposer } from "@harshil1712/agent-ui/agents";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useAgent } from "agents/react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";

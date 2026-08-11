@@ -6,13 +6,13 @@ import { Meta, Source } from "@storybook/addon-docs/blocks";
 
 Install the package, satisfy its peer requirements, and render your first agent UI.
 
-`@agent-ui/react` is a peer-dependency-light component library. The core exports are SDK-free;
+`@harshil1712/agent-ui` is a peer-dependency-light component library. The core exports are SDK-free;
 the adapter entry point requires the AI SDK types that the Cloudflare Agents SDK is built on.
 
 ## Install
 
 ```bash
-pnpm add @agent-ui/react @cloudflare/kumo @phosphor-icons/react
+pnpm add @harshil1712/agent-ui @cloudflare/kumo @phosphor-icons/react
 ```
 
 ### Peer dependencies
@@ -29,7 +29,7 @@ pnpm add @agent-ui/react @cloudflare/kumo @phosphor-icons/react
   </tbody>
 </table>
 
-`ai` is an optional peer dependency. Import from `@agent-ui/react/agents` when you need it; the
+`ai` is an optional peer dependency. Import from `@harshil1712/agent-ui/agents` when you need it; the
 core components do not require it.
 
 ### Tailwind + Kumo styles
@@ -38,7 +38,7 @@ Consumers using Tailwind must include Kumo's Tailwind stylesheet and source file
 own styles are exported separately and should be imported once by every application.
 
 ```ts
-import "@agent-ui/react/styles";
+import "@harshil1712/agent-ui/styles";
 ```
 
 ```css
@@ -54,7 +54,7 @@ view model, hand it to `AgentChatRoot`, and render `AgentChatMessages`.
 
 <Source
   language="tsx"
-  code={`import { AgentChatRoot, AgentChatMessages, type AgentChatViewModel } from "@agent-ui/react";
+  code={`import { AgentChatRoot, AgentChatMessages, type AgentChatViewModel } from "@harshil1712/agent-ui";
 
 const viewModel: AgentChatViewModel = {
   messages: [
@@ -96,7 +96,7 @@ If you already hold a chat object from `useAgentChat` (Cloudflare Agents) or `us
 use the `Preset`. Pass `chat.sendMessage` to include a default composer.
 
 ```tsx
-import { AgentChat } from "@agent-ui/react/agents";
+import { AgentChat } from "@harshil1712/agent-ui/agents";
 
 export function AgentPanel({ chat }) {
   return <AgentChat.Preset chat={chat} />;

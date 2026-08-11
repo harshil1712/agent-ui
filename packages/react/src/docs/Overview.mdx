@@ -9,14 +9,14 @@ Agent application components for the Cloudflare Agents SDK, built with Kumo.
 React components for building agentic interfaces: transcripts, tool calls, reasoning, prompt
 composers, and more. Components are controlled — they receive state and callbacks through props
 and never connect to an agent, open a WebSocket, or call an SDK directly. Cloudflare-specific
-state translation lives in a dedicated adapter export (`@agent-ui/react/agents`).
+state translation lives in a dedicated adapter export (`@harshil1712/agent-ui/agents`).
 
 ## Component catalog
 
-Everything ships from `@agent-ui/react`, split across two entry points so SDK-free components stay
+Everything ships from `@harshil1712/agent-ui`, split across two entry points so SDK-free components stay
 decoupled from any agent runtime.
 
-### Core — `@agent-ui/react`
+### Core — `@harshil1712/agent-ui`
 
 <table>
   <thead>
@@ -39,7 +39,7 @@ decoupled from any agent runtime.
 The core also exports `useAgentChatViewModel`, which reads the view model provided by the nearest
 `AgentChat.Root` (see <a target="_top" href="/?path=/docs/agent-ui-architecture--docs">Architecture</a>).
 
-### Adapter — `@agent-ui/react/agents`
+### Adapter — `@harshil1712/agent-ui/agents`
 
 The `agents` entry point bridges Cloudflare Agents / AI SDK chat state into the core components:
 

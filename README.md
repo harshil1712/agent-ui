@@ -9,13 +9,13 @@ Cloudflare Agents and AI SDK chat state.
 ## Install
 
 ```sh
-pnpm add @agent-ui/react @cloudflare/kumo @phosphor-icons/react
+pnpm add @harshil1712/agent-ui @cloudflare/kumo @phosphor-icons/react
 ```
 
 Import the component styles once in your application:
 
 ```ts
-import "@agent-ui/react/styles";
+import "@harshil1712/agent-ui/styles";
 ```
 
 Tailwind consumers must also include Kumo's stylesheet and source files:
@@ -31,7 +31,7 @@ Tailwind consumers must also include Kumo's stylesheet and source files:
 Use the core package when you want to own the state and callbacks:
 
 ```tsx
-import { AgentMessage } from "@agent-ui/react";
+import { AgentMessage } from "@harshil1712/agent-ui";
 
 export function Greeting() {
   return (
@@ -46,7 +46,7 @@ export function Greeting() {
 Use the adapter when you already have a chat object from Cloudflare Agents or the AI SDK:
 
 ```tsx
-import { AgentChat } from "@agent-ui/react/agents";
+import { AgentChat } from "@harshil1712/agent-ui/agents";
 
 export function AgentPanel({ chat }) {
   return <AgentChat.Preset chat={chat} />;
@@ -85,3 +85,15 @@ The component package is in `packages/react`. The Cloudflare Agents integration 
 `apps/playground`.
 
 See [`ROADMAP.md`](./ROADMAP.md) for planned components, Cloudflare adapter work, and release requirements.
+
+## Deployment
+
+Pushes to `main` deploy two Cloudflare Workers through GitHub Actions:
+
+- `agent-ui-playground` runs the Agents SDK playground with Durable Objects and Workers AI.
+- `agent-ui-docs` serves the static Storybook documentation.
+
+Create a GitHub environment named `production` and add `CLOUDFLARE_ACCOUNT_ID`,
+`CLOUDFLARE_API_TOKEN_PLAYGROUND`, and `CLOUDFLARE_API_TOKEN_DOCS`. Keep the docs token scoped to
+Workers Scripts Edit; the playground token also needs access to its Durable Object and Workers AI
+bindings.

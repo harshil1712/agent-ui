@@ -1,1 +1,1 @@
-declare module "@agent-ui/react/styles";
+declare module "@harshil1712/agent-ui/styles";

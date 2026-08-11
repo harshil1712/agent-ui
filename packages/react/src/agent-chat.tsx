@@ -31,7 +31,7 @@ export type AgentChatMessageRole = "user" | "assistant" | "system";
 
 /**
  * A normalized, SDK-free message in the chat view model. Produced by the
- * adapter (for example `useAgentChatUI` in the `@agent-ui/react/agents`
+ * adapter (for example `useAgentChatUI` in the `@harshil1712/agent-ui/agents`
  * entry point) and consumed by `AgentChat` presentational components.
  */
 export interface AgentChatMessageModel {
@@ -253,7 +253,7 @@ function joinClass(...classes: Array<string | false | null | undefined>): string
  * Compound entry point for the SDK-free agent chat presentational layer:
  * `AgentChat.Root` (context provider) and `AgentChat.Messages` (transcript).
  * The headless adapter (`useAgentChatUI`) and zero-config `AgentChat.Preset`
- * live in the `@agent-ui/react/agents` entry point.
+ * live in the `@harshil1712/agent-ui/agents` entry point.
  */
 export const AgentChat = {
   Root: AgentChatRoot,

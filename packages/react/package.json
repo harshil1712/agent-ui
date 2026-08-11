@@ -1,8 +1,22 @@
 {
-  "name": "@agent-ui/react",
+  "name": "@harshil1712/agent-ui",
   "version": "0.0.0",
   "description": "Agent application components for Cloudflare Agents SDK, built with Kumo",
+  "author": "Harshil Agrawal",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harshil1712/agent-ui.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/harshil1712/agent-ui#readme",
+  "bugs": {
+    "url": "https://github.com/harshil1712/agent-ui/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "type": "module",
   "sideEffects": [
     "**/*.css"
@@ -28,6 +42,9 @@
     "build-storybook": "storybook build",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@tanstack/markdown": "0.0.13"
+  },
   "peerDependencies": {
     "@cloudflare/kumo": "^2.9.1",
     "@phosphor-icons/react": "^2.1.10",
@@ -47,14 +64,13 @@
     "@storybook/addon-docs": "^10.5.7",
     "@storybook/react-vite": "latest",
     "@tailwindcss/vite": "^4.3.1",
-    "@tanstack/markdown": "0.0.13",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
-    "ai": "^7.0.58",
+    "ai": "^7.0.59",
     "happy-dom": "latest",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

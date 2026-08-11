@@ -4,3 +4,7 @@ storybook-static
 .wrangler
 worker-configuration.d.ts
 *.local
+.env
+.env.*
+.dev.vars
+.dev.vars.*

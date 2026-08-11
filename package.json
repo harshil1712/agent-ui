@@ -7,7 +7,7 @@
     "build": "pnpm --recursive build",
     "check": "pnpm --recursive check",
     "dev": "pnpm --filter @agent-ui/playground dev",
-    "storybook": "pnpm --filter @agent-ui/react storybook",
+    "storybook": "pnpm --filter @harshil1712/agent-ui storybook",
     "test": "pnpm --recursive test"
   },
   "devDependencies": {

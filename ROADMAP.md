@@ -79,7 +79,7 @@ This roadmap tracks the features needed for a useful first release. Items are or
 
 ## Cloudflare Adapter
 
-The core components must remain independent of networking. Cloudflare integration should live in a separate export such as `@agent-ui/react/cloudflare`.
+The core components must remain independent of networking. Cloudflare integration should live in a separate export such as `@harshil1712/agent-ui/agents`.
 
 - [ ] Translate `useAgentChat()` messages into component models
 - [ ] Map AI SDK message parts to message, tool, artifact, and citation components
@@ -114,10 +114,10 @@ The core components must remain independent of networking. Cloudflare integratio
 
 ## Release Readiness
 
-- [ ] Choose the final package name and npm scope
+- [x] Choose the final package name and npm scope
 - [ ] Add Changesets and a release workflow
-- [ ] Add CI for checks, tests, builds, and Storybook
-- [ ] Add package provenance and publishing configuration
+- [x] Add CI for checks, tests, builds, and Storybook
+- [x] Add package provenance and publishing configuration
 - [ ] Define browser and React version support
 - [ ] Write migration and versioning policies
 - [ ] Build one complete reference agent using only public package APIs
