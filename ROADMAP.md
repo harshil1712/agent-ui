@@ -115,7 +115,7 @@ The core components must remain independent of networking. Cloudflare integratio
 ## Release Readiness
 
 - [x] Choose the final package name and npm scope
-- [ ] Add Changesets and a release workflow
+- [x] Add Changesets and a release workflow
 - [x] Add CI for checks, tests, builds, and Storybook
 - [x] Add package provenance and publishing configuration
 - [ ] Define browser and React version support

@@ -6,9 +6,12 @@
   "scripts": {
     "build": "pnpm --recursive build",
     "check": "pnpm --recursive check",
+    "changeset": "changeset",
     "dev": "pnpm --filter @agent-ui/playground dev",
+    "release": "pnpm --filter @harshil1712/agent-ui build && changeset publish",
     "storybook": "pnpm --filter @harshil1712/agent-ui storybook",
-    "test": "pnpm --recursive test"
+    "test": "pnpm --recursive test",
+    "version-packages": "changeset version"
   },
   "devDependencies": {
     "@changesets/cli": "latest",

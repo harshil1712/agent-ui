@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "check": "tsc --noEmit",
+    "check": "pnpm --filter @harshil1712/agent-ui build && pnpm types && tsc --noEmit",
     "dev": "vite dev",
     "types": "wrangler types worker-configuration.d.ts --include-runtime false"
   },
