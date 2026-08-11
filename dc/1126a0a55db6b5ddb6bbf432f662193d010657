@@ -1,0 +1,19 @@
+pnpm-lock.yaml
+  s_498183e43b57ea::t_3b8b632324a8d0 7-10,22-27,30-32,35,39-41,47,49-50,59,99-102,141-142,176-177,182-184,188-189,198-200,740-742,1853-1854,3673,3676,3680,3682-3684,3687,3693,3700,3702-3705,4121,4123-4125,4323,4510,4563-4564,5241,5260-5261,5270,5272,5274,6888,6891
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "dc1126a0a55db6b5ddb6bbf432f662193d010657",
+  "prompts": {},
+  "sessions": {
+    "s_498183e43b57ea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00ea9921affeT7m8ihM6TaVTVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
