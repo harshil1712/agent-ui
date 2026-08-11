@@ -4,12 +4,20 @@
   "description": "Agent application components for Cloudflare Agents SDK, built with Kumo",
   "license": "MIT",
   "type": "module",
-  "sideEffects": ["**/*.css"],
-  "files": ["dist"],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./agents": {
+      "types": "./dist/agents/index.d.ts",
+      "import": "./dist/agents.js"
     },
     "./styles": "./dist/styles.css"
   },
@@ -23,21 +31,30 @@
   "peerDependencies": {
     "@cloudflare/kumo": "^2.9.1",
     "@phosphor-icons/react": "^2.1.10",
+    "ai": "^7.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@cloudflare/kumo": "^2.9.1",
     "@phosphor-icons/react": "^2.1.10",
     "@storybook/addon-a11y": "latest",
+    "@storybook/addon-docs": "^10.5.7",
     "@storybook/react-vite": "latest",
     "@tailwindcss/vite": "^4.3.1",
+    "@tanstack/markdown": "0.0.13",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
+    "ai": "^7.0.58",
     "happy-dom": "latest",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

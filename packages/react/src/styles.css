@@ -1,106 +1,174 @@
+/* ===========================================================================
+ * Agent UI — styles
+ *
+ * Tokens: this library references installed Kumo 2.9.1 semantic tokens
+ * (`--color-kumo-*` for surfaces/status, `--text-color-kumo-*` for text) with
+ * reasonable neutral fallbacks so the components degrade gracefully outside a
+ * Kumo-themed consumer. All library class names are prefixed `agent-ui-`.
+ * ========================================================================= */
+
+/* ---------------------------------------------------------------------------
+ * ToolCall — compact execution rail attached to assistant output.
+ * No card: a status marker on a timeline rail + identity + concise status,
+ * with details that expand (via Kumo Collapsible) only on request.
+ * ------------------------------------------------------------------------- */
+
 .agent-ui-tool-call {
+  /* Documented geometry overrides */
+  --agent-ui-tool-rail-offset: 18px;
+  --agent-ui-tool-rail-gap: 4px;
+
   width: 100%;
-  overflow: hidden;
-  border: 1px solid var(--color-kumo-line, #d9d9d9);
-  border-radius: 14px;
-  background: var(--color-kumo-base, #fff);
-  color: var(--color-kumo-default, #282828);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
 }
 
-.agent-ui-tool-call__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
+.agent-ui-tool-call__rail {
+  position: relative;
+  padding-left: var(--agent-ui-tool-rail-offset);
 }
 
-.agent-ui-tool-call__identity {
+.agent-ui-tool-call__rail::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 4px;
+  width: 2px;
+  background: var(--color-kumo-hairline, #e0e0e0);
+  content: "";
+}
+
+.agent-ui-tool-call__marker {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-kumo-line, #737373);
+}
+
+.agent-ui-tool-call--running .agent-ui-tool-call__marker {
+  background: var(--color-kumo-focus, #1d7ff2);
+  animation: agent-ui-tool-call-pulse 1.2s ease-in-out infinite;
+}
+
+.agent-ui-tool-call--awaiting-approval .agent-ui-tool-call__marker {
+  background: var(--color-kumo-warning, #b54708);
+}
+
+.agent-ui-tool-call--completed .agent-ui-tool-call__marker {
+  background: var(--color-kumo-success, #067647);
+}
+
+.agent-ui-tool-call--failed .agent-ui-tool-call__marker {
+  background: var(--color-kumo-danger, #b42318);
+}
+
+/* Subtle variant — quieter rail for background/nested tool calls. */
+.agent-ui-tool-call--subtle .agent-ui-tool-call__marker {
+  width: 8px;
+  height: 8px;
+  opacity: 0.75;
+}
+
+.agent-ui-tool-call--subtle .agent-ui-tool-call__rail::before {
+  left: 5px;
+}
+
+.agent-ui-tool-call__body {
   min-width: 0;
+  display: grid;
+  gap: var(--agent-ui-tool-rail-gap);
 }
 
-.agent-ui-tool-call__eyebrow {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--color-kumo-subtle, #737373);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: uppercase;
+/* Compact density — tighter rail and smaller detail text. */
+.agent-ui-tool-call--compact {
+  --agent-ui-tool-rail-offset: 14px;
+  --agent-ui-tool-rail-gap: 2px;
+}
+
+.agent-ui-tool-call__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
 }
 
 .agent-ui-tool-call__name {
   overflow: hidden;
-  margin: 0;
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 650;
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.agent-ui-tool-call--compact .agent-ui-tool-call__name {
+  font-size: 11px;
+}
+
 .agent-ui-tool-call__status {
-  display: flex;
   flex: none;
-  align-items: center;
-  gap: 8px;
 }
 
 .agent-ui-tool-call__description {
-  padding: 0 16px 16px;
-  color: var(--color-kumo-subtle, #666);
-  font-size: 14px;
+  color: var(--text-color-kumo-subtle, #666);
+  font-size: 13px;
   line-height: 1.5;
 }
 
-.agent-ui-tool-call__details {
-  border-top: 1px solid var(--color-kumo-line, #e5e5e5);
-}
-
-.agent-ui-tool-call__details summary {
-  padding: 10px 16px;
-  color: var(--color-kumo-subtle, #666);
-  cursor: pointer;
-  font-size: 12px;
+/* Details disclosure trigger (a Kumo ghost Button wrapping Collapsible). */
+.agent-ui-tool-call__details-trigger {
+  width: fit-content;
+  color: var(--text-color-kumo-subtle, #666);
   font-weight: 600;
-  list-style-position: inside;
-  user-select: none;
 }
 
-.agent-ui-tool-call__details summary:hover {
-  background: var(--color-kumo-tint, rgb(0 0 0 / 3%));
-  color: var(--color-kumo-strong, #111);
+.agent-ui-tool-call__details-trigger svg {
+  transition: transform 0.15s ease;
+}
+
+.agent-ui-tool-call__details-trigger[data-panel-open] svg {
+  transform: rotate(180deg);
 }
 
 .agent-ui-tool-call__details-body {
   display: grid;
-  gap: 12px;
-  padding: 4px 16px 16px;
+  gap: 10px;
+  margin-top: 8px;
+  padding-left: 4px;
 }
 
-.agent-ui-tool-call__details-body h4 {
-  margin: 0 0 6px;
-  color: var(--color-kumo-subtle, #666);
+.agent-ui-tool-call__details-body section {
+  min-width: 0;
+}
+
+.agent-ui-tool-call__section-title {
+  margin: 0 0 4px;
+  color: var(--text-color-kumo-subtle, #666);
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.agent-ui-tool-call__details-body pre {
+.agent-ui-tool-call__pre {
   overflow-x: auto;
   margin: 0;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
   background: var(--color-kumo-recessed, #f5f5f5);
+  color: var(--text-color-kumo-default, #282828);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.agent-ui-tool-call--compact .agent-ui-tool-call__pre {
+  font-size: 11px;
+  padding: 8px 10px;
 }
 
 .agent-ui-tool-call__error {
@@ -109,17 +177,461 @@
 }
 
 .agent-ui-tool-call__actions {
-  display: flex;
-  justify-content: flex-end;
+  display: inline-flex;
   gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--color-kumo-line, #e5e5e5);
-  background: var(--color-kumo-recessed, #fafafa);
+  margin-top: 6px;
 }
 
-@media (max-width: 480px) {
-  .agent-ui-tool-call__header {
-    align-items: flex-start;
-    flex-direction: column;
+.agent-ui-tool-call--awaiting-approval .agent-ui-tool-call__actions {
+  margin-top: 2px;
+}
+
+@keyframes agent-ui-tool-call-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-ui-tool-call--running .agent-ui-tool-call__marker {
+    animation: none;
+  }
+
+  .agent-ui-tool-call__details-trigger svg {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Pending + reasoning — quiet lifecycle signals that do not compete with the
+ * response itself.
+ * ------------------------------------------------------------------------- */
+
+.agent-ui-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.agent-ui-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  width: fit-content;
+  min-height: 28px;
+}
+
+.agent-ui-pending__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agent-ui-pending__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--text-color-kumo-subtle, #737373);
+  animation: agent-ui-pending-wave 1.1s ease-in-out infinite;
+}
+
+.agent-ui-pending__dots span:nth-child(2) { animation-delay: 0.14s; }
+.agent-ui-pending__dots span:nth-child(3) { animation-delay: 0.28s; }
+
+.agent-ui-reasoning {
+  max-width: var(--agent-ui-message-max-width, 65ch);
+  border-left: 2px solid var(--color-kumo-hairline, #e0e0e0);
+  padding-left: 8px;
+}
+
+.agent-ui-reasoning__trigger {
+  color: var(--text-color-kumo-subtle, #666);
+  font-weight: 600;
+}
+
+.agent-ui-reasoning__summary {
+  display: inline-block;
+  padding: 4px 8px;
+  font-weight: 600;
+}
+
+.agent-ui-reasoning__trigger svg { transition: transform 0.15s ease; }
+.agent-ui-reasoning__trigger[data-panel-open] svg { transform: rotate(180deg); }
+
+.agent-ui-reasoning__panel { padding: 4px 8px 2px; }
+.agent-ui-reasoning__text {
+  display: inline;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-ui-reasoning__cursor {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--color-kumo-focus, #1d7ff2);
+  animation: agent-ui-tool-call-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes agent-ui-pending-wave {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+/* ---------------------------------------------------------------------------
+ * AgentComposer — controlled prompt input with compact attachment previews.
+ * ------------------------------------------------------------------------- */
+
+.agent-ui-composer {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.agent-ui-composer__attachments {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.agent-ui-composer__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  min-height: 32px;
+  padding: 3px 4px 3px 9px;
+  border: 1px solid var(--color-kumo-hairline, #e0e0e0);
+  border-radius: 9px;
+  background: var(--color-kumo-tint, rgb(0 0 0 / 4%));
+}
+
+.agent-ui-composer__chip-preview {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.agent-ui-composer__chip-name {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-ui-composer__chip-size { flex: none; }
+.agent-ui-composer__chip-remove { flex: none; }
+
+.agent-ui-composer__input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.agent-ui-composer__textarea { flex: 1; min-width: 0; }
+.agent-ui-composer__actions { display: flex; flex: none; gap: 4px; }
+.agent-ui-composer__file-input { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-ui-pending__dots span,
+  .agent-ui-reasoning__cursor { animation: none; }
+  .agent-ui-reasoning__trigger svg { transition: none; }
+}
+
+/* ---------------------------------------------------------------------------
+ * AgentMessage — working transcript.
+ * User and assistant messages share the same default bubble treatment; system
+ * (and standalone tool) messages are narrow inline notices.
+ * Visual treatment is driven by the `variant` (plain / bubble / notice) and
+ * `density` (comfortable / compact) classes.
+ * ------------------------------------------------------------------------- */
+
+.agent-ui-message {
+  /* Documented geometry overrides */
+  --agent-ui-message-max-width: 65ch;
+  --agent-ui-message-gap: 12px;
+  --agent-ui-user-max-width: min(80%, 36rem);
+  --agent-ui-bubble-max-width: var(--agent-ui-user-max-width);
+
+  width: 100%;
+  color: var(--text-color-kumo-default, #282828);
+}
+
+/* Plain — flat reading column. */
+.agent-ui-message--plain {
+  background: none;
+  border: 0;
+}
+
+/* Bubble — padded, rounded surface (user and assistant default). */
+.agent-ui-message--bubble {
+  width: auto;
+  max-width: var(--agent-ui-bubble-max-width);
+  padding: 8px 14px;
+  background: var(--color-kumo-tint, rgb(0 0 0 / 4%));
+}
+
+.agent-ui-message--bubble.agent-ui-message--user {
+  margin-left: auto;
+  border-radius: 16px 16px 4px 16px;
+}
+
+.agent-ui-message--bubble.agent-ui-message--assistant {
+  margin-right: auto;
+  border-radius: 16px 16px 16px 4px;
+}
+
+/* Notice — narrow, muted inline notice (system/tool default). */
+.agent-ui-message--notice {
+  color: var(--text-color-kumo-subtle, #737373);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-ui-message--notice.agent-ui-message--system {
+  text-align: center;
+}
+
+.agent-ui-message__content {
+  display: grid;
+  gap: var(--agent-ui-message-gap);
+  max-width: var(--agent-ui-message-max-width);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.agent-ui-message--compact {
+  --agent-ui-message-gap: 6px;
+}
+
+.agent-ui-message--bubble .agent-ui-message__content {
+  max-width: none;
+}
+
+.agent-ui-message__part {
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * File part — compact attachment chip rendered inside an AgentMessage.
+ * ------------------------------------------------------------------------- */
+
+.agent-ui-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 4px 8px 4px 6px;
+  border: 1px solid var(--color-kumo-hairline, #e0e0e0);
+  border-radius: 9px;
+  background: var(--color-kumo-tint, rgb(0 0 0 / 4%));
+}
+
+.agent-ui-file__thumb {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.agent-ui-file__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 5px;
+  background: var(--color-kumo-recessed, #f5f5f5);
+  color: var(--text-color-kumo-subtle, #666);
+}
+
+.agent-ui-file__meta {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.agent-ui-file__name {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-ui-file__type {
+  color: var(--text-color-kumo-subtle, #666);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.agent-ui-file__link {
+  flex: none;
+  color: var(--text-color-kumo-link, #0867c5);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+ * AgentChatMessages — adapter container for an agent transcript.
+ * ------------------------------------------------------------------------- */
+
+.agent-ui-chat-preset {
+  display: grid;
+  gap: var(--agent-ui-message-gap, 12px);
+}
+
+.agent-ui-chat-messages {
+  display: grid;
+  gap: var(--agent-ui-message-gap, 12px);
+}
+
+.agent-ui-chat-messages__recovering {
+  display: block;
+  color: var(--text-color-kumo-subtle, #737373);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-ui-chat-messages__empty {
+  display: grid;
+  gap: 4px;
+  padding: 16px 0;
+  text-align: center;
+}
+
+.agent-ui-chat-messages__empty-title {
+  margin: 0;
+  color: var(--text-color-kumo-default, #282828);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.agent-ui-chat-messages__empty-hint {
+  margin: 0;
+  color: var(--text-color-kumo-subtle, #666);
+  font-size: 13px;
+}
+
+.agent-ui-markdown { min-width: 0; overflow-wrap: anywhere; }
+.agent-ui-markdown > :first-child { margin-top: 0; }
+.agent-ui-markdown > :last-child { margin-bottom: 0; }
+.agent-ui-markdown p { margin: 0 0 0.75em; }
+.agent-ui-markdown h1,
+.agent-ui-markdown h2,
+.agent-ui-markdown h3,
+.agent-ui-markdown h4,
+.agent-ui-markdown h5,
+.agent-ui-markdown h6 { margin: 1em 0 0.45em; line-height: 1.3; }
+.agent-ui-markdown h1 { font-size: 1.35em; }
+.agent-ui-markdown h2 { font-size: 1.2em; }
+.agent-ui-markdown h3 { font-size: 1.08em; }
+.agent-ui-markdown ul,
+.agent-ui-markdown ol { margin: 0.5em 0 0.75em; padding-left: 1.4em; }
+.agent-ui-markdown li + li { margin-top: 0.2em; }
+.agent-ui-markdown blockquote {
+  margin: 0.75em 0;
+  padding-left: 0.9em;
+  border-left: 2px solid var(--color-kumo-line, #a3a3a3);
+  color: var(--text-color-kumo-subtle, #666);
+}
+.agent-ui-markdown code {
+  border-radius: 4px;
+  background: var(--color-kumo-recessed, #f5f5f5);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.88em;
+}
+.agent-ui-markdown :not(pre) > code { padding: 0.12em 0.35em; }
+.agent-ui-markdown pre {
+  max-width: 100%;
+  margin: 0.75em 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-radius: 7px;
+  background: var(--color-kumo-recessed, #f5f5f5);
+  line-height: 1.55;
+}
+.agent-ui-markdown pre code { background: none; }
+.agent-ui-markdown a { color: var(--text-color-kumo-link, #0867c5); text-decoration: underline; }
+.agent-ui-markdown hr { border: 0; border-top: 1px solid var(--color-kumo-hairline, #e0e0e0); }
+.agent-ui-markdown table { width: 100%; border-collapse: collapse; font-size: 0.92em; }
+.agent-ui-markdown th,
+.agent-ui-markdown td { padding: 6px 8px; border-bottom: 1px solid var(--color-kumo-hairline, #e0e0e0); text-align: left; }
+
+.agent-ui-message__cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: var(--color-kumo-focus, #1d7ff2);
+  vertical-align: text-bottom;
+  animation: agent-ui-message-blink 1s steps(2, start) infinite;
+}
+
+.agent-ui-message__streaming {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.agent-ui-message__actions {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.agent-ui-message:hover .agent-ui-message__actions,
+.agent-ui-message:focus-within .agent-ui-message__actions {
+  opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .agent-ui-message__actions {
+    opacity: 1;
+  }
+}
+
+@keyframes agent-ui-message-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-ui-message__cursor {
+    animation: none;
+  }
+
+  .agent-ui-message__actions {
+    transition: none;
   }
 }

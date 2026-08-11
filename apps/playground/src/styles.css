@@ -5,101 +5,146 @@
 
 :root {
   font-family: "Manrope", sans-serif;
-  color: #18201f;
-  background: #f4f1e9;
+  color: var(--color-kumo-contrast);
+  background: var(--color-kumo-canvas);
   font-synthesis: none;
 }
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
-button, input { font: inherit; }
+button, textarea, input { font: inherit; }
 
-body::before {
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-  background-image:
-    linear-gradient(rgb(24 32 31 / 5%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(24 32 31 / 5%) 1px, transparent 1px);
-  background-size: 32px 32px;
-  content: "";
-  mask-image: linear-gradient(to bottom, black, transparent 78%);
-}
+/* --- Full-height chat shell --- */
 
-.workshop-shell {
+.chat-shell {
   display: flex;
-  width: min(1180px, calc(100% - 48px));
-  min-height: 100vh;
+  width: min(880px, calc(100% - 32px));
+  height: 100dvh;
   margin: 0 auto;
   flex-direction: column;
 }
 
-.workshop-header {
+/* --- Header --- */
+
+.chat-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 42px 0 24px;
-  border-bottom: 2px solid #18201f;
+  gap: 16px;
+  padding: 18px 4px 16px;
+  border-bottom: 1px solid var(--color-kumo-hairline);
 }
 
-.workshop-kicker, .workshop-stage__label, .workshop-footer, .workshop-connection {
-  font-family: "DM Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+.chat-header__title { display: flex; flex-direction: column; gap: 2px; }
+.chat-header__title h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.chat-header__actions { display: flex; align-items: center; gap: 12px; }
+
+.chat-header__connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-kumo-hairline);
+  border-radius: 999px;
+  color: var(--text-color-kumo-subtle);
+  font: 500 11px "DM Mono", monospace;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.workshop-kicker { margin: 0 0 8px; color: #ca4d26; }
-.workshop-header h1 { margin: 0; font-size: clamp(28px, 4vw, 48px); font-weight: 700; letter-spacing: -0.045em; }
-.workshop-connection { padding: 7px 10px; border: 1px solid #18201f; border-radius: 99px; }
+.chat-header__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-kumo-success);
+}
 
-.workshop-grid {
+.chat-header__connection[data-status="streaming"] .chat-header__dot,
+.chat-header__connection[data-status="submitted"] .chat-header__dot {
+  background: var(--color-kumo-brand);
+}
+.chat-header__connection[data-status="error"] .chat-header__dot {
+  background: var(--color-kumo-danger);
+}
+
+/* --- Transcript --- */
+
+.chat-transcript {
   display: grid;
+  align-content: start;
+  gap: 20px;
+  min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(260px, 0.78fr) minmax(420px, 1.35fr);
-  gap: clamp(48px, 8vw, 112px);
-  align-items: center;
-  padding: 72px 0;
+  padding: 24px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.workshop-index {
-  display: block;
-  margin-bottom: 22px;
-  font: 500 13px "DM Mono", monospace;
-  color: #ca4d26;
+.chat-empty {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  justify-items: center;
+  align-content: center;
+  min-height: 100%;
+  padding: 40px 24px;
+  text-align: center;
+  gap: 8px;
 }
 
-.workshop-notes h2 { margin: 0; font-size: clamp(32px, 4vw, 55px); font-weight: 700; line-height: 1.02; letter-spacing: -0.05em; }
-.workshop-notes > p { max-width: 520px; margin: 28px 0; color: #57615f; font-size: 15px; line-height: 1.7; }
-.workshop-notes dl { margin: 0; border-top: 1px solid #b5b2aa; }
-.workshop-notes dl div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid #b5b2aa; font: 12px "DM Mono", monospace; }
-.workshop-notes dt { color: #747b79; }
-.workshop-notes dd { margin: 0; text-align: right; }
+.chat-empty h2 { max-width: 100%; margin: 0; overflow-wrap: anywhere; }
+.chat-empty p { max-width: min(46ch, 100%); margin: 0; }
 
-.workshop-stage {
-  position: relative;
+.chat-suggestions {
   display: flex;
-  min-height: 420px;
-  padding: clamp(24px, 5vw, 56px);
-  border: 1px solid #a5aaa7;
-  background: rgb(251 250 246 / 88%);
-  box-shadow: 12px 12px 0 #d8d4ca;
-  flex-direction: column;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 14px;
+  gap: 8px;
+  margin-top: 14px;
 }
 
-.workshop-stage::before { position: absolute; top: -7px; left: 20px; width: 54px; height: 13px; background: #ca4d26; content: ""; }
-.workshop-stage__label { position: absolute; top: 18px; right: 20px; color: #747b79; }
-.workshop-stage > button { align-self: flex-end; }
-.workshop-footer { display: flex; justify-content: space-between; padding: 18px 0 28px; border-top: 1px solid #18201f; color: #57615f; }
+.chat-recovering {
+  justify-self: start;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--color-kumo-tint);
+  color: var(--text-color-kumo-subtle);
+  font: 500 12px "DM Mono", monospace;
+}
 
-@media (max-width: 800px) {
-  .workshop-shell { width: min(100% - 28px, 620px); }
-  .workshop-header { padding-top: 24px; }
-  .workshop-connection { display: none; }
-  .workshop-grid { grid-template-columns: 1fr; gap: 48px; padding: 48px 0; }
-  .workshop-notes dd { min-width: 0; max-width: 58%; overflow-wrap: anywhere; }
-  .workshop-stage { min-height: 360px; padding: 64px 20px 24px; box-shadow: 7px 7px 0 #d8d4ca; }
-  .workshop-footer { gap: 16px; flex-direction: column; }
+/* --- Composer --- */
+
+.chat-composer {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0 18px;
+  border-top: 1px solid var(--color-kumo-hairline);
+}
+
+.chat-composer__error {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-kumo-danger-tint);
+}
+
+.chat-composer__hint { display: block; text-align: right; }
+
+@media (max-width: 600px) {
+  .chat-shell { width: min(100% - 20px, 880px); }
+  .chat-header__connection { display: none; }
+  .chat-empty { padding: 32px 8px; }
+  .chat-suggestions { width: 100%; flex-direction: column; }
+  .chat-suggestions button {
+    width: 100%;
+    height: auto;
+    min-height: 32px;
+    white-space: normal;
+  }
 }

@@ -1,0 +1,92 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Agent UI/Architecture" />
+
+# Architecture & API choice
+
+SDK-free core versus the `agents` adapter — and how theming works.
+
+`@agent-ui/react` is split so the render layer stays independent of any agent runtime. Choose the
+core API when you want full control over state, and the adapter API when you already hold
+Cloudflare Agents / AI SDK chat state.
+
+## Two entry points, one library
+
+```
+@agent-ui/react          → SDK-free core components + types
+@agent-ui/react/agents   → adapter: maps AI SDK / Cloudflare Agents state into the core
+@agent-ui/react/styles   → the library's bundled CSS (non-Tailwind consumers)
+```
+
+### Core — `@agent-ui/react`
+
+The core components are controlled. They receive state and callbacks through props, and never
+connect to an agent or call an SDK. The `AgentChatViewModel` is a plain, typed object — you build
+it however you like, whether from an agent, a local reducer, or a fixture.
+
+Use the core when you:
+
+- Own the state flow and want no hidden behavior.
+- Need to render an agent transcript without depending on a specific runtime.
+- Are building your own adapter or integration.
+
+```tsx
+import { AgentChatRoot, AgentChatMessages } from "@agent-ui/react";
+
+export function MyChat({ viewModel }) {
+  return (
+    <AgentChatRoot viewModel={viewModel}>
+      <AgentChatMessages />
+    </AgentChatRoot>
+  );
+}
+```
+
+### Adapter — `@agent-ui/react/agents`
+
+The adapter bridges raw chat state (the shape returned by Cloudflare Agents `useAgentChat` and
+AI SDK `useChat`) into the SDK-free view model. Raw AI types exist only at the adapter's input; the
+returned view model and its callbacks use package types.
+
+Use the adapter when you:
+
+- Already use Cloudflare Agents or the AI SDK and want a zero-config UI.
+- Want `AgentChat.Preset`, which wires the transcript, a composer, and lifecycle handling together.
+
+```tsx
+import { AgentChat } from "@agent-ui/react/agents";
+
+export function AgentPanel({ chat }) {
+  return <AgentChat.Preset chat={chat} />;
+}
+```
+
+`AgentChat` is a compound: `AgentChat.Root`, `AgentChat.Messages`, and `AgentChat.Preset`. `Preset`
+requires `chat.sendMessage` to render its default composer; without it, the transcript renders
+without an input.
+
+### Which should I use?
+
+<table>
+  <thead>
+    <tr><th>If you…</th><th>Use</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Want to own every transition and message</td><td>Core (<code>@agent-ui/react</code>)</td></tr>
+    <tr><td>Already hold <code>useAgentChat</code> / <code>useChat</code> state</td><td>Adapter (<code>@agent-ui/react/agents</code>)</td></tr>
+    <tr><td>Need a composable, zero-config chat panel</td><td><code>AgentChat.Preset</code></td></tr>
+    <tr><td>Are building a custom integration that renders a transcript</td><td>Core <code>AgentChatRoot</code> + <code>AgentChatMessages</code></td></tr>
+  </tbody>
+</table>
+
+## Theming
+
+Components are styled with Kumo semantic tokens (`--color-kumo-*`, `--text-color-kumo-*`) and use
+Kumo primitives (for example, `Collapsible`, `Button`). Tokens adapt to the active color mode, so
+there is no `dark:` variant to manage. Consumers set their Kumo theme once; the components inherit
+surfaces, status colors, text, and focus treatment automatically.
+
+Geometry and labels are overridable per component through documented props — for example
+`--agent-ui-message-max-width` and `--agent-ui-user-max-width` on `AgentMessage`, or the `slots`
+and `labels` props on `AgentComposer`. Library-specific CSS is prefixed `agent-ui-` to avoid
+collisions with consumer styles.

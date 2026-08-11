@@ -6,13 +6,23 @@ export default defineConfig({
   plugins: [react(), dts({ include: ["src"] })],
   build: {
     lib: {
-      entry: "src/index.ts",
+      entry: {
+        index: "src/index.ts",
+        agents: "src/agents/index.ts"
+      },
       cssFileName: "styles",
-      fileName: "index",
+      fileName: (format, entryName) => `${entryName}.js`,
       formats: ["es"]
     },
     rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime", "@cloudflare/kumo", "@phosphor-icons/react"]
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "@cloudflare/kumo",
+        "@phosphor-icons/react",
+        "ai"
+      ]
     }
   },
   test: {

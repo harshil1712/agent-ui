@@ -1,0 +1,64 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Agent UI/Overview" />
+
+# Agent UI
+
+Agent application components for the Cloudflare Agents SDK, built with Kumo.
+
+React components for building agentic interfaces: transcripts, tool calls, reasoning, prompt
+composers, and more. Components are controlled — they receive state and callbacks through props
+and never connect to an agent, open a WebSocket, or call an SDK directly. Cloudflare-specific
+state translation lives in a dedicated adapter export (`@agent-ui/react/agents`).
+
+## Component catalog
+
+Everything ships from `@agent-ui/react`, split across two entry points so SDK-free components stay
+decoupled from any agent runtime.
+
+### Core — `@agent-ui/react`
+
+<table>
+  <thead>
+    <tr><th>Component</th><th>Purpose</th><th>Docs</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>AgentChat</code></td><td>Compound — <code>Root</code> (context) and <code>Messages</code> (transcript). No <code>Preset</code> here; see the adapter.</td><td><a target="_top" href="/?path=/docs/agent-ui-agentchat--docs">docs</a></td></tr>
+    <tr><td><code>AgentChatMessages</code></td><td>Renders a message transcript from a view model</td><td><a target="_top" href="/?path=/docs/agent-ui-agentchat--docs">docs</a></td></tr>
+    <tr><td><code>AgentChatRoot</code></td><td>Provides the chat view model context to children</td><td><a target="_top" href="/?path=/docs/agent-ui-agentchat--docs">docs</a></td></tr>
+    <tr><td><code>AgentMessage</code></td><td>A single user, assistant, system, or tool message</td><td><a target="_top" href="/?path=/docs/agent-ui-agentmessage--docs">docs</a></td></tr>
+    <tr><td><code>AgentComposer</code></td><td>Controlled prompt input with attachment previews</td><td><a target="_top" href="/?path=/docs/agent-ui-agentcomposer--docs">docs</a></td></tr>
+    <tr><td><code>AgentMarkdown</code></td><td>Streaming-safe markdown renderer</td><td><a target="_top" href="/?path=/docs/agent-ui-agentmarkdown--docs">docs</a></td></tr>
+    <tr><td><code>AgentFile</code></td><td>Compact attachment chip rendered inside a message</td><td><a target="_top" href="/?path=/docs/agent-ui-agentfile--docs">docs</a></td></tr>
+    <tr><td><code>AgentPending</code></td><td>Quiet "thinking" placeholder while a turn is in flight</td><td><a target="_top" href="/?path=/docs/agent-ui-agentpending--docs">docs</a></td></tr>
+    <tr><td><code>AgentReasoning</code></td><td>Collapsible model reasoning panel</td><td><a target="_top" href="/?path=/docs/agent-ui-agentreasoning--docs">docs</a></td></tr>
+    <tr><td><code>ToolCall</code></td><td>Compact execution rail with status, details, and approval actions</td><td><a target="_top" href="/?path=/docs/agent-ui-toolcall--docs">docs</a></td></tr>
+  </tbody>
+</table>
+
+The core also exports `useAgentChatViewModel`, which reads the view model provided by the nearest
+`AgentChat.Root` (see <a target="_top" href="/?path=/docs/agent-ui-architecture--docs">Architecture</a>).
+
+### Adapter — `@agent-ui/react/agents`
+
+The `agents` entry point bridges Cloudflare Agents / AI SDK chat state into the core components:
+
+- `AgentChat` compound — `Root`, `Messages`, and `Preset`. The full compound, including the
+  zero-config `Preset`, exists only here.
+- `AgentChatPreset` — the standalone `Preset` component over a raw chat object
+  (<a target="_top" href="/?path=/docs/agent-ui-agentchatpreset--docs">docs</a>).
+- `useAgentChatUI` — headless adapter that maps raw chat state into the SDK-free
+  `AgentChatViewModel`.
+- `useAgentComposer` — composer state and submit plumbing for building custom inputs.
+- `mapChatStatus`, `mapToolState`, `toAgentMessageParts`, `getMessageText` — state and part mappers.
+
+## Design principles
+
+- **Controlled by default.** Every component receives state and callbacks through props. There is
+  no hidden networking; you own the data flow and the agent connection.
+- **Structured parts, not blobs.** Messages are composed from typed parts — text, tool, reasoning,
+  file, and custom — so renderers can branch per content type.
+- **Built on Kumo.** Visual treatments use Kumo semantic tokens (surfaces, status, text) and adapt
+  to the active color mode without `dark:` variants. Library class names are prefixed `agent-ui-`.
+- **Accessible and keyboard-safe.** Semantic HTML, visible focus, accessible names, and reduced-motion
+  behavior are preserved throughout.

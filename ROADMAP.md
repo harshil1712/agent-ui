@@ -16,11 +16,11 @@ This roadmap tracks the features needed for a useful first release. Items are or
 
 ### Agent Message
 
-- [ ] Render user, assistant, system, and tool messages
-- [ ] Support partial content while streaming
-- [ ] Render structured message parts rather than one text blob
-- [ ] Provide slots for custom content renderers
-- [ ] Expose retry, edit, and copy actions
+- [x] Render user, assistant, system, and tool messages
+- [x] Support partial content while streaming
+- [x] Render structured message parts rather than one text blob
+- [x] Provide slots for custom content renderers
+- [x] Expose retry, edit, and copy actions
 
 ### Agent Thread
 
@@ -68,8 +68,8 @@ This roadmap tracks the features needed for a useful first release. Items are or
 
 ## Tool Call Enhancements
 
-- [ ] Controlled expansion state
-- [ ] Custom input and output renderers
+- [x] Controlled expansion state
+- [x] Custom input and output renderers
 - [ ] Long-running progress and progress messages
 - [ ] Cancellation and retry actions
 - [ ] Start and completion timestamps

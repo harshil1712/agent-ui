@@ -5,7 +5,12 @@ const preview: Preview = {
   parameters: {
     a11y: { test: "error" },
     backgrounds: { default: "app" },
-    layout: "centered"
+    layout: "centered",
+    options: {
+      storySort: {
+        order: ["Agent UI", ["Overview", "Getting Started", "Architecture", "*"]]
+      }
+    }
   },
   decorators: [
     (Story) => (

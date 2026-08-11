@@ -1,0 +1,107 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title="Agent UI/Getting Started" />
+
+# Getting Started
+
+Install the package, satisfy its peer requirements, and render your first agent UI.
+
+`@agent-ui/react` is a peer-dependency-light component library. The core exports are SDK-free;
+the adapter entry point requires the AI SDK types that the Cloudflare Agents SDK is built on.
+
+## Install
+
+```bash
+pnpm add @agent-ui/react @cloudflare/kumo @phosphor-icons/react
+```
+
+### Peer dependencies
+
+<table>
+  <thead>
+    <tr><th>Package</th><th>Version</th><th>Required</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>react</code> / <code>react-dom</code></td><td><code>^18</code> or <code>^19</code></td><td>Yes</td></tr>
+    <tr><td><code>@cloudflare/kumo</code></td><td><code>^2.9.1</code></td><td>Yes</td></tr>
+    <tr><td><code>@phosphor-icons/react</code></td><td><code>^2.1.10</code></td><td>Yes</td></tr>
+    <tr><td><code>ai</code></td><td><code>^7.0.0</code></td><td>Only for the <code>agents</code> adapter</td></tr>
+  </tbody>
+</table>
+
+`ai` is an optional peer dependency. Import from `@agent-ui/react/agents` when you need it; the
+core components do not require it.
+
+### Tailwind + Kumo styles
+
+Consumers using Tailwind must include Kumo's Tailwind stylesheet and source files. The library's
+own styles are exported separately and should be imported once by every application.
+
+```ts
+import "@agent-ui/react/styles";
+```
+
+```css
+@import "tailwindcss";
+@import "@cloudflare/kumo/styles/tailwind";
+@source "../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
+```
+
+## Minimal example
+
+Compose the core components with your own view model. The core is fully controlled — build the
+view model, hand it to `AgentChatRoot`, and render `AgentChatMessages`.
+
+<Source
+  language="tsx"
+  code={`import { AgentChatRoot, AgentChatMessages, type AgentChatViewModel } from "@agent-ui/react";
+
+const viewModel: AgentChatViewModel = {
+  messages: [
+    {
+      id: "u1",
+      role: "user",
+      text: "Is Cloudflare having any outages right now?",
+      parts: [{ type: "text", text: "Is Cloudflare having any outages right now?" }],
+      isStreaming: false,
+      isAssistant: false,
+      canRetry: false,
+      canEdit: true,
+      isLast: false,
+    },
+  ],
+  phase: "ready",
+  busy: false,
+  isRecovering: false,
+  showPending: false,
+  isIdle: false,
+  expanded: {},
+  setExpanded: () => {},
+  toggleExpanded: () => {},
+  actions: {},
+};
+
+export function StatusChat() {
+  return (
+    <AgentChatRoot viewModel={viewModel}>
+      <AgentChatMessages />
+    </AgentChatRoot>
+  );
+}`}
+/>
+
+## Zero-config with a Cloudflare agent
+
+If you already hold a chat object from `useAgentChat` (Cloudflare Agents) or `useChat` (AI SDK),
+use the `Preset`. Pass `chat.sendMessage` to include a default composer.
+
+```tsx
+import { AgentChat } from "@agent-ui/react/agents";
+
+export function AgentPanel({ chat }) {
+  return <AgentChat.Preset chat={chat} />;
+}
+```
+
+See the <a target="_top" href="/?path=/docs/agent-ui-architecture--docs">Architecture</a> guide to
+choose between the core and adapter APIs for your use case.
