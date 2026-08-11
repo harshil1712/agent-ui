@@ -4,7 +4,11 @@ import "./styles.css";
 import { Button, Text } from "@cloudflare/kumo";
 import { TrashIcon } from "@phosphor-icons/react";
 import { AgentComposer } from "@harshil1712/agent-ui";
-import { AgentChat, useAgentChatUI, useAgentComposer } from "@harshil1712/agent-ui/agents";
+import {
+  AgentChat,
+  useAgentChatUI,
+  useAgentComposer,
+} from "@harshil1712/agent-ui/agents";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useAgent } from "agents/react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
@@ -16,13 +20,14 @@ const MODEL_LABEL = "GLM-4.7-Flash";
 const STORAGE_KEY = "agent-ui-playground.chat-name";
 
 const SUGGESTIONS = [
-  "Is Cloudflare having any outages right now?",
+  "What is Workers AI?",
   "What model are you running on?",
-  "How do streaming tool calls work in this playground?"
+  "How do streaming tool calls work in this playground?",
 ];
 
 const TOOL_DESCRIPTIONS: Record<string, string> = {
-  checkCloudflareStatus: "Check Cloudflare's current status page for incidents."
+  checkCloudflareStatus:
+    "Check Cloudflare's current status page for incidents.",
 };
 
 /** Read (or mint) a per-browser conversation id so each browser gets its own thread. */
@@ -43,7 +48,7 @@ function App() {
 
   const agent = useAgent({
     agent: "ToolDemoAgent",
-    name: chatName
+    name: chatName,
   });
 
   const chat = useAgentChat({ agent });
@@ -67,13 +72,13 @@ function App() {
     onRetry: () => {
       shouldFollowRef.current = true;
       void chat.regenerate();
-    }
+    },
   });
 
   const composer = useAgentComposer({
     sendMessage: chat.sendMessage,
     busy: viewModel.busy,
-    disabled: viewModel.isRecovering
+    disabled: viewModel.isRecovering,
   });
 
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -87,7 +92,8 @@ function App() {
   const handleTranscriptScroll = useCallback(() => {
     const transcript = transcriptRef.current;
     if (!transcript) return;
-    const distance = transcript.scrollHeight - transcript.scrollTop - transcript.clientHeight;
+    const distance =
+      transcript.scrollHeight - transcript.scrollTop - transcript.clientHeight;
     shouldFollowRef.current = distance < 80;
   }, []);
 
@@ -103,7 +109,7 @@ function App() {
       shouldFollowRef.current = true;
       void chat.sendMessage({ text });
     },
-    [viewModel.busy, chat.sendMessage]
+    [viewModel.busy, chat.sendMessage],
   );
 
   const statusLabel =
@@ -163,8 +169,8 @@ function App() {
                   Chat with an agent on Cloudflare
                 </Text>
                 <Text as="p" variant="secondary">
-                  Ask about Cloudflare&apos;s status — the agent can call a real tool
-                  and stream the result back in real time.
+                  Ask about Cloudflare&apos;s status — the agent can call a real
+                  tool and stream the result back in real time.
                 </Text>
                 <div className="chat-suggestions">
                   {SUGGESTIONS.map((suggestion) => (
@@ -229,7 +235,7 @@ function App() {
                   Attach text files · Enter to send · Shift+Enter for a new line
                 </Text>
               </>
-            )
+            ),
           }}
         />
       </AgentChat.Root>
@@ -240,5 +246,5 @@ function App() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
-  </StrictMode>
+  </StrictMode>,
 );
