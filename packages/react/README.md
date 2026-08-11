@@ -57,5 +57,5 @@ export function AgentPanel({ chat }) {
 }
 ```
 
-See the [Storybook documentation](https://agent-ui-docs.api-harshil.workers.dev) for component
+See the [Storybook documentation](https://agent-ui.harshil.dev) for component
 examples, lifecycle states, and API documentation.

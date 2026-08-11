@@ -1,11 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState, type ReactElement } from "react";
-import { AgentChatRoot, AgentChatMessages, type AgentChatViewModel, type AgentChatMessageModel } from "./agent-chat";
+import {
+  AgentChatRoot,
+  AgentChatMessages,
+  type AgentChatViewModel,
+  type AgentChatMessageModel,
+} from "./agent-chat";
 
 const meta = {
   title: "Agent UI/AgentChat",
   component: AgentChatMessages,
-  tags: ["autodocs"]
+  tags: ["autodocs"],
 } satisfies Meta<typeof AgentChatMessages>;
 
 export default meta;
@@ -18,48 +23,52 @@ function buildViewModel(): AgentChatViewModel {
       {
         id: "u1",
         role: "user",
-        text: "Is Cloudflare having any outages right now?",
-        parts: [{ type: "text", text: "Is Cloudflare having any outages right now?" }],
+        text: "What is Workers AI?",
+        parts: [{ type: "text", text: "What is Workers AI?" }],
         isStreaming: false,
         isAssistant: false,
         canRetry: false,
         canEdit: true,
-        isLast: false
+        isLast: false,
       },
       {
         id: "a1",
         role: "assistant",
-        text: "Let me check the status page.\n\nNo incidents are currently reported.",
+        text: "Let me check the docs.\n\nWorkers AI is AI inference on the edge.",
         parts: [
-          { type: "text", text: "Let me check the status page." },
+          { type: "text", text: "Let me check the docs." },
           {
             type: "reasoning",
             reasoning: {
-              text: "The user asked about availability, so I should query the status API before answering.",
+              text: "The user asked about Workers AI, so I should read the current official documentation before answering.",
               expanded: false,
-              onExpandedChange: (open) => setExpanded({ "a1:reasoning:1": open })
-            }
+              onExpandedChange: (open) =>
+                setExpanded({ "a1:reasoning:1": open }),
+            },
           },
           {
             type: "tool",
             toolCall: {
-              name: "checkCloudflareStatus",
+              name: "checkCloudflareDocs",
               status: "completed",
-              description: "Check the Cloudflare status page for active incidents.",
+              description: "Check the Cloudflare docs for Workers AI",
               input: {},
-              output: { incidents: [], degradedComponents: 0 },
+              output: {
+                source: "https://developers.cloudflare.com/workers-ai/index.md",
+                markdown: "Workers AI runs machine learning models on Cloudflare's global network.",
+              },
               expanded: expanded["call_1"] ?? false,
-              onExpandedChange: (open) => setExpanded({ call_1: open })
-            }
+              onExpandedChange: (open) => setExpanded({ call_1: open }),
+            },
           },
-          { type: "text", text: "No incidents are currently reported." }
+          { type: "text", text: "Workers AI is AI inference on the edge." },
         ],
         isStreaming: false,
         isAssistant: true,
         canRetry: false,
         canEdit: false,
-        isLast: true
-      }
+        isLast: true,
+      },
     ],
     phase: "ready",
     busy: false,
@@ -69,7 +78,7 @@ function buildViewModel(): AgentChatViewModel {
     expanded,
     setExpanded: (id, open) => setExpanded((p) => ({ ...p, [id]: open })),
     toggleExpanded: (id) => setExpanded((p) => ({ ...p, [id]: !p[id] })),
-    actions: {}
+    actions: {},
   };
 }
 
@@ -83,15 +92,17 @@ const wrapper = (StoryComponent: () => ReactElement) => {
 };
 
 export const Transcript: Story = {
-  render: () => wrapper(() => <AgentChatMessages />)
+  render: () => wrapper(() => <AgentChatMessages />),
 };
 
 export const Empty: Story = {
   render: () => (
-    <AgentChatRoot viewModel={{ ...buildViewModel(), messages: [], isIdle: true }}>
+    <AgentChatRoot
+      viewModel={{ ...buildViewModel(), messages: [], isIdle: true }}
+    >
       <AgentChatMessages />
     </AgentChatRoot>
-  )
+  ),
 };
 
 export const UserAssistantVariants: Story = {
@@ -100,10 +111,10 @@ export const UserAssistantVariants: Story = {
     wrapper(() => (
       <AgentChatMessages
         messageProps={({ message: msg }) => ({
-          variant: msg.role === "user" ? "plain" : "bubble"
+          variant: msg.role === "user" ? "plain" : "bubble",
         })}
       />
-    ))
+    )),
 };
 
 export const CustomToolLabels: Story = {
@@ -112,10 +123,10 @@ export const CustomToolLabels: Story = {
     wrapper(() => (
       <AgentChatMessages
         toolProps={({ part }) => ({
-          labels: { details: `${part.toolCall.name} details` }
+          labels: { details: `${part.toolCall.name} details` },
         })}
       />
-    ))
+    )),
 };
 
 export const CustomReasoningLabels: Story = {
@@ -123,9 +134,11 @@ export const CustomReasoningLabels: Story = {
   render: () =>
     wrapper(() => (
       <AgentChatMessages
-        reasoningProps={() => ({ labels: { show: "Show", hide: "Hide", reasoning: "Reasoning" } })}
+        reasoningProps={() => ({
+          labels: { show: "Show", hide: "Hide", reasoning: "Reasoning" },
+        })}
       />
-    ))
+    )),
 };
 
 export const LocalizedMessages: Story = {
@@ -136,12 +149,12 @@ export const LocalizedMessages: Story = {
         messageProps={({ message: msg }) => ({
           labels: {
             role: { user: "Vous", assistant: "Assistant" },
-            actions: { copy: "Copier", retry: "Réessayer" }
+            actions: { copy: "Copier", retry: "Réessayer" },
           },
-          variant: msg.role === "user" ? "plain" : "bubble"
+          variant: msg.role === "user" ? "plain" : "bubble",
         })}
       />
-    ))
+    )),
 };
 
 export const FullMessageOverride: Story = {
@@ -150,12 +163,14 @@ export const FullMessageOverride: Story = {
     wrapper(() => (
       <AgentChatMessages
         renderMessage={(msg, index) => (
-          <div style={{ fontFamily: "monospace", fontSize: 13, padding: "8px 0" }}>
+          <div
+            style={{ fontFamily: "monospace", fontSize: 13, padding: "8px 0" }}
+          >
             [{index}] {msg.role}: {msg.text}
           </div>
         )}
       />
-    ))
+    )),
 };
 
 export const FullToolOverride: Story = {
@@ -169,7 +184,7 @@ export const FullToolOverride: Story = {
           </span>
         )}
       />
-    ))
+    )),
 };
 
 export const PendingWithCustomLabel: Story = {
@@ -182,10 +197,10 @@ export const PendingWithCustomLabel: Story = {
           ...buildViewModel(),
           messages: [buildViewModel().messages[0]],
           showPending: true,
-          isIdle: false
+          isIdle: false,
         }}
       />
-    ))
+    )),
 };
 
 export const Recovering: Story = {
@@ -202,17 +217,22 @@ export const Recovering: Story = {
               id: "a1",
               role: "assistant",
               text: "Partial response from an interrupted turn…",
-              parts: [{ type: "text", text: "Partial response from an interrupted turn…" }],
+              parts: [
+                {
+                  type: "text",
+                  text: "Partial response from an interrupted turn…",
+                },
+              ],
               isStreaming: false,
               isAssistant: true,
               canRetry: false,
               canEdit: false,
-              isLast: true
-            }
-          ]
+              isLast: true,
+            },
+          ],
         }}
       />
-    ))
+    )),
 };
 
 export const WholeTranscriptOverride: Story = {
@@ -221,7 +241,14 @@ export const WholeTranscriptOverride: Story = {
     wrapper(() => (
       <AgentChatMessages
         render={(view) => (
-          <ol style={{ fontFamily: "monospace", fontSize: 13, listStyle: "none", padding: 0 }}>
+          <ol
+            style={{
+              fontFamily: "monospace",
+              fontSize: 13,
+              listStyle: "none",
+              padding: 0,
+            }}
+          >
             {view.messages.map((msg) => (
               <li key={msg.id} style={{ padding: "8px 0" }}>
                 <strong>{msg.role}:</strong> {msg.text}
@@ -230,7 +257,7 @@ export const WholeTranscriptOverride: Story = {
           </ol>
         )}
       />
-    ))
+    )),
 };
 
 export const ContextualTextOverride: Story = {
@@ -242,7 +269,7 @@ export const ContextualTextOverride: Story = {
           <span
             style={{
               color:
-                msg.role === "user" ? "var(--text-color-kumo-link)" : undefined
+                msg.role === "user" ? "var(--text-color-kumo-link)" : undefined,
             }}
           >
             {msg.role === "user" ? "You said: " : ""}
@@ -250,7 +277,7 @@ export const ContextualTextOverride: Story = {
           </span>
         )}
       />
-    ))
+    )),
 };
 
 export const FilePropsStory: Story = {
@@ -265,14 +292,19 @@ export const FilePropsStory: Story = {
         { type: "text", text: "Here is the report." },
         {
           type: "file",
-          file: { name: "README.md", mediaType: "text/markdown", size: 18432, url: "https://example.com/README.md" }
-        }
+          file: {
+            name: "README.md",
+            mediaType: "text/markdown",
+            size: 18432,
+            url: "https://example.com/README.md",
+          },
+        },
       ],
       isStreaming: false,
       isAssistant: true,
       canRetry: false,
       canEdit: false,
-      isLast: true
+      isLast: true,
     };
     return (
       <AgentChatRoot viewModel={{ ...vm, messages: [fileMessage] }}>
@@ -281,5 +313,5 @@ export const FilePropsStory: Story = {
         />
       </AgentChatRoot>
     );
-  }
+  },
 };

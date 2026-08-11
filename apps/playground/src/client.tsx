@@ -26,8 +26,7 @@ const SUGGESTIONS = [
 ];
 
 const TOOL_DESCRIPTIONS: Record<string, string> = {
-  checkCloudflareStatus:
-    "Check Cloudflare's current status page for incidents.",
+  checkCloudflareDocs: "Read the official Workers AI documentation.",
 };
 
 /** Read (or mint) a per-browser conversation id so each browser gets its own thread. */
@@ -169,8 +168,8 @@ function App() {
                   Chat with an agent on Cloudflare
                 </Text>
                 <Text as="p" variant="secondary">
-                  Ask about Cloudflare&apos;s status — the agent can call a real
-                  tool and stream the result back in real time.
+                  Ask about Workers AI — the agent can read the latest official
+                  documentation and stream a grounded answer in real time.
                 </Text>
                 <div className="chat-suggestions">
                   {SUGGESTIONS.map((suggestion) => (

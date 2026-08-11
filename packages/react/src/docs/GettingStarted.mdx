@@ -61,8 +61,8 @@ const viewModel: AgentChatViewModel = {
     {
       id: "u1",
       role: "user",
-      text: "Is Cloudflare having any outages right now?",
-      parts: [{ type: "text", text: "Is Cloudflare having any outages right now?" }],
+      text: "What is Workers AI?",
+      parts: [{ type: "text", text: "What is Workers AI?" }],
       isStreaming: false,
       isAssistant: false,
       canRetry: false,
@@ -81,7 +81,7 @@ const viewModel: AgentChatViewModel = {
   actions: {},
 };
 
-export function StatusChat() {
+export function WorkersAiChat() {
   return (
     <AgentChatRoot viewModel={viewModel}>
       <AgentChatMessages />

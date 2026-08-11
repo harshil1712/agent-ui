@@ -92,12 +92,12 @@ describe("AgentMessage", () => {
         parts={[
           {
             type: "reasoning",
-            reasoning: { text: "I should check current status.", isStreaming: true }
+            reasoning: { text: "I should read the current docs.", isStreaming: true }
           }
         ]}
       />
     );
-    expect(screen.getByText("I should check current status.")).toBeInTheDocument();
+    expect(screen.getByText("I should read the current docs.")).toBeInTheDocument();
     expect(container.querySelector(".agent-ui-reasoning")).toHaveAttribute("data-streaming", "true");
   });
 
