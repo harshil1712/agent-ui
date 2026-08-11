@@ -1,0 +1,19 @@
+RELEASE.md
+  s_498183e43b57ea::t_2e7bc9cf669dfb 3,5,7,9-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "dce7a9873a6838bf287e222b114a716e60874764",
+  "prompts": {},
+  "sessions": {
+    "s_498183e43b57ea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00ea9921affeT7m8ihM6TaVTVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
