@@ -1,0 +1,31 @@
+.changeset/include-changelog.md
+  s_e9628ac11d0150::t_e02df6ea8eb3b0 1-5
+apps/playground/src/client.tsx
+  s_e9628ac11d0150::t_85d1415819e962 29,171-172
+apps/playground/src/server.ts
+  s_e9628ac11d0150::t_56114144e7c1cf 3-9,15-18,21-22,24-27,29,31-33,36,39-40,47-50,53,56,68,79,82,84,87-88,91,98,106-107,112,117,125-129
+packages/react/package.json
+  s_e9628ac11d0150::t_f13d33a9805b0b 25-26
+packages/react/src/agent-chat.stories.tsx
+  s_e9628ac11d0150::t_756ce4274ced1c 3-8,13,26-27,32,37,39,43,45-47,52,54,56-59,61-62,64,70-71,81,95,100-102,105,114,117,126,129,137-139,141,152,154,157,166-168,173,187,200,203,220-225,230-232,235,244-251,260,272,280,295-301,307,316
+packages/react/src/agent-message.test.tsx
+  s_e9628ac11d0150::t_ce6e8f8b6d5ccd 95,100
+packages/react/src/agents/agent-chat-preset.stories.tsx
+  s_e9628ac11d0150::t_49394800e4b6a8 9,27,29,32-33,36,40-43,45-46,49,54,59,67-69,78-80,88,92-94,104-106,117-118,134-139,141-145,149-150,156-160,163-166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "47f5327a3e5122a04ca11ba061df5cf2a9c526bb",
+  "prompts": {},
+  "sessions": {
+    "s_e9628ac11d0150": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00e4aa4c4ffedClggermwbTlZr",
+        "model": "@cf/deepseek-ai/deepseek-v4-flash-0731"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
