@@ -6,7 +6,6 @@
   "scripts": {
     "build": "vite build",
     "check": "tsc --noEmit",
-    "deploy": "vite build && wrangler deploy",
     "dev": "vite dev",
     "types": "wrangler types worker-configuration.d.ts --include-runtime false"
   },

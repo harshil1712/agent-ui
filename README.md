@@ -88,12 +88,10 @@ See [`ROADMAP.md`](./ROADMAP.md) for planned components, Cloudflare adapter work
 
 ## Deployment
 
-Pushes to `main` deploy two Cloudflare Workers through GitHub Actions:
+Pushes to `main` deploy the static Storybook documentation to the `agent-ui-docs` Worker through
+GitHub Actions. Create a GitHub environment named `production` and add
+`CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN_DOCS`; keep the token scoped to Workers Scripts
+Edit.
 
-- `agent-ui-playground` runs the Agents SDK playground with Durable Objects and Workers AI.
-- `agent-ui-docs` serves the static Storybook documentation.
-
-Create a GitHub environment named `production` and add `CLOUDFLARE_ACCOUNT_ID`,
-`CLOUDFLARE_API_TOKEN_PLAYGROUND`, and `CLOUDFLARE_API_TOKEN_DOCS`. Keep the docs token scoped to
-Workers Scripts Edit; the playground token also needs access to its Durable Object and Workers AI
-bindings.
+The Agents SDK playground is intentionally local-only because its Workers AI binding incurs usage
+costs. Run it with `pnpm dev`; do not expose it as a public Worker.
