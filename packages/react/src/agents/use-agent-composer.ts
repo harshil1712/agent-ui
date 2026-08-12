@@ -64,9 +64,9 @@ export interface UseAgentComposerResult {
   /** Whether a non-empty, enabled submit is currently possible. */
   canSubmit: boolean;
   /**
-   * Sends the current draft via `sendMessage`. On success the draft is
-   * cleared; on failure the draft is preserved, the
-   * `error` state is set, and `onError` is invoked. Never rejects.
+   * Sends the current draft via `sendMessage`. The submitted draft is cleared
+   * immediately; on failure it is restored when doing so will not overwrite a
+   * new draft, the `error` state is set, and `onError` is invoked. Never rejects.
    */
   submit: (value?: string) => Promise<void>;
   /** Merges new files into the pending attachments (deduped by identity). */
@@ -165,20 +165,38 @@ export function useAgentComposer({
       const text = (value ?? input).trim();
       if (!text && files.length === 0) return;
       if (busy || disabled) return;
+      const submittedInput = input;
+      const submittedFiles = files;
+      const submittedRejectedFiles = rejectedFiles;
       try {
-        const fileList = toFileList(files);
-        await sendMessage({ text, ...(fileList ? { files: fileList } : {}) });
-        setError(null);
-        setRejectedFiles([]);
+        const fileList = toFileList(submittedFiles);
+
+        // Clear as soon as the message is accepted for sending. Some chat
+        // transports resolve sendMessage only after the assistant finishes,
+        // which would otherwise leave the sent message in the composer for the
+        // entire response.
         setInput("");
         setFiles([]);
+        setError(null);
+        setRejectedFiles([]);
+
+        await sendMessage({ text, ...(fileList ? { files: fileList } : {}) });
       } catch (err) {
-        // Preserve the draft (input + files) so the user can retry or edit.
+        // Restore the submitted draft without replacing anything composed
+        // while the request was pending.
+        setInput((current) => current || submittedInput);
+        setFiles((current) => {
+          const currentIds = new Set(current.map(fileId));
+          return [...submittedFiles.filter((file) => !currentIds.has(fileId(file))), ...current];
+        });
+        setRejectedFiles((current) =>
+          current.length > 0 ? current : submittedRejectedFiles
+        );
         setError(err);
         onError?.(err);
       }
     },
-    [input, files, busy, disabled, sendMessage, onError]
+    [input, files, rejectedFiles, busy, disabled, sendMessage, onError]
   );
 
   const handleAddAttachments = useCallback(

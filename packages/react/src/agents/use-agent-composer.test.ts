@@ -25,6 +25,31 @@ describe("useAgentComposer", () => {
     expect(result.current.input).toBe("");
   });
 
+  it("clears the submitted draft before sendMessage finishes", async () => {
+    let finishSend!: () => void;
+    const sendMessage = vi.fn(
+      () => new Promise<void>((resolve) => {
+        finishSend = resolve;
+      })
+    );
+    const { result } = renderHook(() => useAgentComposer({ sendMessage }));
+
+    act(() => result.current.setInput("hello"));
+
+    let submission!: Promise<void>;
+    act(() => {
+      submission = result.current.submit();
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith({ text: "hello" });
+    expect(result.current.input).toBe("");
+
+    await act(async () => {
+      finishSend();
+      await submission;
+    });
+  });
+
   it("does not submit empty input", async () => {
     const sendMessage = vi.fn();
     const { result } = renderHook(() => useAgentComposer({ sendMessage }));
