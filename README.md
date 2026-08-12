@@ -6,6 +6,9 @@ Agent UI provides controlled, SDK-independent primitives for messages, tool call
 attachments, composers, and chat transcripts. An optional adapter connects those primitives to
 Cloudflare Agents and AI SDK chat state.
 
+Agent UI owns presentation and interaction only. Cloudflare Agents or Think continue to own the
+agent loop, message persistence, context management, tool execution, and durable recovery.
+
 ## Install
 
 ```sh
@@ -69,7 +72,7 @@ The `ai` package is an optional peer dependency required only by the adapter ent
 | `ToolCall` | Tool execution status and approval actions |
 
 Run `pnpm storybook` for interactive examples, component states, and API documentation. The
-complete Cloudflare Agents integration is in [`apps/playground`](./apps/playground).
+complete Cloudflare Think integration is in [`apps/playground`](./apps/playground).
 
 ## Development
 
@@ -79,9 +82,15 @@ pnpm storybook
 pnpm dev
 pnpm check
 pnpm test
+pnpm test:memory
 ```
 
-The component package is in `packages/react`. The Cloudflare Agents integration playground is in
+`pnpm test:memory` builds Storybook, runs repeated streaming/message-eviction/tool-detail cycles in
+headless Chrome, forces garbage collection through the Chrome DevTools Protocol, and fails if
+evicted message or payload instances—or mounted transcript nodes—remain retained. Set
+`CHROME_PATH` if Chrome or Chromium is not installed in a standard system location.
+
+The component package is in `packages/react`. The Cloudflare Think integration playground is in
 `apps/playground`.
 
 See [`ROADMAP.md`](./ROADMAP.md) for planned components, Cloudflare adapter work, and release requirements.

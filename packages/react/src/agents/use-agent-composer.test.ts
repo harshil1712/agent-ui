@@ -221,3 +221,204 @@ describe("useAgentComposer", () => {
     expect(result.current.error).toBeNull();
   });
 });
+
+describe("useAgentComposer attachment validation", () => {
+  function file(name: string, size = 10): File {
+    return new File([new Uint8Array(size)], name, { type: "text/plain" });
+  }
+
+  it("is unrestricted by default (no maxFiles / maxSize)", () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() => useAgentComposer({ sendMessage }));
+
+    act(() => result.current.handleAddAttachments(fileList([file("a"), file("b"), file("c")])));
+    expect(result.current.attachments).toHaveLength(3);
+    expect(result.current.rejectedFiles).toHaveLength(0);
+  });
+
+  it("rejects files beyond maxFiles with reason max-files and reports them", () => {
+    const sendMessage = vi.fn();
+    const onRejectedFiles = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 2, onRejectedFiles })
+    );
+
+    act(() => result.current.handleAddAttachments(fileList([file("a"), file("b"), file("c")])));
+    expect(result.current.attachments).toHaveLength(2);
+    expect(result.current.attachments.map((a) => a.name)).toEqual(["a", "b"]);
+    expect(result.current.rejectedFiles).toEqual([
+      { file: expect.any(File), reason: "max-files" }
+    ]);
+    expect(result.current.rejectedFiles[0].file.name).toBe("c");
+    expect(onRejectedFiles).toHaveBeenCalledTimes(1);
+    expect(onRejectedFiles.mock.calls[0][0]).toEqual([
+      { file: expect.any(File), reason: "max-files" }
+    ]);
+  });
+
+  it("rejects a single file exceeding maxSize with reason max-size", () => {
+    const sendMessage = vi.fn();
+    const onRejectedFiles = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxSize: 50, onRejectedFiles })
+    );
+
+    act(() =>
+      result.current.handleAddAttachments(fileList([file("small", 10), file("big", 100), file("ok", 40)]))
+    );
+    expect(result.current.attachments).toHaveLength(2);
+    expect(result.current.attachments.map((a) => a.name)).toEqual(["small", "ok"]);
+    expect(result.current.rejectedFiles).toEqual([
+      { file: expect.any(File), reason: "max-size" }
+    ]);
+    expect(result.current.rejectedFiles[0].file.name).toBe("big");
+    expect(onRejectedFiles).toHaveBeenCalledWith([
+      { file: expect.any(File), reason: "max-size" }
+    ]);
+  });
+
+  it("combines maxFiles and maxSize, rejecting the oversized file before the cap", () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 2, maxSize: 50 })
+    );
+
+    act(() =>
+      result.current.handleAddAttachments(
+        fileList([file("ok1", 10), file("big", 100), file("ok2", 20), file("extra", 5)])
+      )
+    );
+    expect(result.current.attachments.map((a) => a.name)).toEqual(["ok1", "ok2"]);
+    expect(result.current.rejectedFiles.map((r) => r.file.name)).toEqual(["big", "extra"]);
+    expect(result.current.rejectedFiles.map((r) => r.reason)).toEqual(["max-size", "max-files"]);
+  });
+
+  it("does not count a max-size rejected file against the maxFiles cap", () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 2, maxSize: 50 })
+    );
+
+    act(() =>
+      result.current.handleAddAttachments(
+        fileList([file("big", 100), file("a", 10), file("b", 10), file("c", 10)])
+      )
+    );
+    // "big" is rejected for size and does not consume a max-files slot.
+    expect(result.current.attachments.map((a) => a.name)).toEqual(["a", "b"]);
+    expect(result.current.rejectedFiles.map((r) => r.file.name)).toEqual(["big", "c"]);
+  });
+
+  it("does not pass rejected files to sendMessage", async () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 1 })
+    );
+
+    act(() => result.current.handleAddAttachments(fileList([file("a"), file("b")])));
+    await act(async () => {
+      await result.current.submit("go");
+    });
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    const arg = sendMessage.mock.calls[0][0] as { files?: FileList };
+    expect(Array.from(arg.files ?? [])).toHaveLength(1);
+    expect(Array.from(arg.files ?? [])[0].name).toBe("a");
+  });
+
+  it("does not report a duplicate re-add as rejected", () => {
+    const sendMessage = vi.fn();
+    const onRejectedFiles = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 2, onRejectedFiles })
+    );
+
+    const f = file("a");
+    act(() => result.current.handleAddAttachments(fileList([f])));
+    act(() => result.current.handleAddAttachments(fileList([f])));
+    expect(result.current.attachments).toHaveLength(1);
+    expect(onRejectedFiles).not.toHaveBeenCalled();
+  });
+
+  it("clears rejectedFiles on clear and on successful submit", async () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 1 })
+    );
+
+    act(() => result.current.handleAddAttachments(fileList([file("a"), file("b")])));
+    expect(result.current.rejectedFiles).toHaveLength(1);
+
+    act(() => result.current.clear());
+    expect(result.current.rejectedFiles).toHaveLength(0);
+    expect(result.current.attachments).toHaveLength(0);
+
+    act(() => result.current.handleAddAttachments(fileList([file("a"), file("b")])));
+    expect(result.current.rejectedFiles).toHaveLength(1);
+    await act(async () => {
+      await result.current.submit("go");
+    });
+    expect(result.current.rejectedFiles).toHaveLength(0);
+  });
+
+  it("keeps rejectedFiles when a send fails and onError fires", async () => {
+    const sendMessage = vi.fn().mockRejectedValue(new Error("boom"));
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 1 })
+    );
+
+    act(() => result.current.handleAddAttachments(fileList([file("a"), file("b")])));
+    expect(result.current.rejectedFiles).toHaveLength(1);
+    await act(async () => {
+      await result.current.submit("go");
+    });
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.rejectedFiles).toHaveLength(1);
+  });
+
+  it("clears stale rejectedFiles on a subsequent successful add", () => {
+    const sendMessage = vi.fn();
+    const onRejectedFiles = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxSize: 50, onRejectedFiles })
+    );
+
+    // First add rejects one oversized file.
+    act(() => result.current.handleAddAttachments(fileList([file("big", 100), file("ok", 10)])));
+    expect(result.current.rejectedFiles).toHaveLength(1);
+    expect(onRejectedFiles).toHaveBeenCalledTimes(1);
+
+    // A later successful add with no rejections must clear the stale result.
+    act(() => result.current.handleAddAttachments(fileList([file("ok2", 10)])));
+    expect(result.current.rejectedFiles).toHaveLength(0);
+    expect(onRejectedFiles).toHaveBeenCalledTimes(1);
+  });
+
+  it("dedupes duplicate files within the same incoming FileList", () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 10 })
+    );
+
+    const dup = file("dup");
+    act(() => result.current.handleAddAttachments(fileList([dup, dup, dup])));
+    expect(result.current.attachments).toHaveLength(1);
+    expect(result.current.attachments[0].name).toBe("dup");
+  });
+
+  it("dedupes within a batch and against current files together", () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentComposer({ sendMessage, maxFiles: 10 })
+    );
+
+    const a = file("a");
+    act(() => result.current.handleAddAttachments(fileList([a, file("b")])));
+    expect(result.current.attachments).toHaveLength(2);
+
+    // Re-add a (against current) plus duplicate c within the batch.
+    act(() =>
+      result.current.handleAddAttachments(fileList([a, file("c"), file("c")]))
+    );
+    expect(result.current.attachments.map((x) => x.name)).toEqual(["a", "b", "c"]);
+  });
+});

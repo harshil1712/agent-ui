@@ -2,6 +2,9 @@ import { Button, Collapsible, Text } from "@cloudflare/kumo";
 import { CaretDownIcon, CheckIcon, XIcon } from "@phosphor-icons/react";
 import {
   forwardRef,
+  useId,
+  useMemo,
+  useState,
   type ComponentPropsWithoutRef,
   type CSSProperties,
   type ReactNode
@@ -55,6 +58,10 @@ export interface ToolCallLabels {
   approve: string;
   /** Accessible name for the approval action group. Defaults to `"Tool approval actions"`. */
   actions: string;
+  /** Label to reveal a truncated detail value. Defaults to `"Show more"`. */
+  showMore: string;
+  /** Label to collapse an expanded detail value. Defaults to `"Show less"`. */
+  showLess: string;
 }
 
 /**
@@ -97,6 +104,20 @@ export interface ToolCallProps
   renderInput?: (input: unknown) => ReactNode;
   /** Custom renderer for the output payload. */
   renderOutput?: (output: unknown) => ReactNode;
+  /**
+   * Character budget for the bounded detail preview before a "Show more"
+   * control offers a larger bounded preview. Defaults to `5000`. Non-finite
+   * values fall back to the default; negatives are clamped to `0`; fractional
+   * values are floored. Only affects the default JSON rendering, never a
+   * custom `renderInput`/`renderOutput`.
+   */
+  detailChars?: number;
+  /**
+   * Hard ceiling for expanded default detail rendering. Defaults to `20000`
+   * and is always capped at `100000`. "Show more" remains bounded and never
+   * fully serializes an arbitrary payload. Custom renderers are unaffected.
+   */
+  maxDetailChars?: number;
   /** Called when the user approves the tool. */
   onApprove?: () => void;
   /** Called when the user rejects the tool. */
@@ -125,21 +146,252 @@ const defaultLabels: ToolCallLabels = {
   error: "Error",
   reject: "Reject",
   approve: "Approve",
-  actions: "Tool approval actions"
+  actions: "Tool approval actions",
+  showMore: "Show more",
+  showLess: "Show less"
 };
 
-function formatData(data: unknown): string {
-  if (typeof data === "string") return data;
+const DEFAULT_DETAIL_CHARS = 5000;
+const DEFAULT_MAX_DETAIL_CHARS = 20000;
+const ABSOLUTE_MAX_DETAIL_CHARS = 100000;
 
-  try {
-    return JSON.stringify(data, null, 2);
-  } catch {
-    return String(data);
-  }
+/** Max nesting depth for the bounded preview serializer. */
+const MAX_PREVIEW_DEPTH = 6;
+
+/**
+ * Normalize the `detailChars` prop to a safe, non-negative, finite integer.
+ * Non-finite values (NaN / ±Infinity) fall back to the default; negatives are
+ * clamped to `0`; fractional values are floored.
+ */
+function normalizeDetailChars(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_DETAIL_CHARS;
+  if (!Number.isFinite(value)) return DEFAULT_DETAIL_CHARS;
+  return Math.min(ABSOLUTE_MAX_DETAIL_CHARS, Math.max(0, Math.floor(value)));
+}
+
+function normalizeMaxDetailChars(value: number | undefined): number {
+  const normalized = value === undefined || !Number.isFinite(value)
+    ? DEFAULT_MAX_DETAIL_CHARS
+    : Math.max(0, Math.floor(value));
+  return Math.min(ABSOLUTE_MAX_DETAIL_CHARS, normalized);
+}
+
+/**
+ * Minimal JSON string encoding that deliberately avoids `JSON.stringify`
+ * (which the bounded preview must not invoke on a large payload).
+ */
+function encodeJsonString(value: string): string {
+  return '"' + value.replace(/[\\"]/g, (m) => (m === '"' ? '\\"' : "\\\\")) + '"';
+}
+
+/**
+ * A bounded, non-serializing preview of an arbitrary value. It walks the
+ * value only until `limit` characters are produced (and no deeper than
+ * `MAX_PREVIEW_DEPTH`), so it never fully stringifies or traverses a huge
+ * object. Strings are sliced cheaply. Circular references are detected and
+ * rendered as `…(circular)`. Returns the preview text plus whether it was
+ * truncated. Expanded previews use the same bounded walk with a larger limit;
+ * arbitrary payloads are never fully serialized by the default renderer.
+ *
+ * Bounds: every appended chunk is capped to the remaining budget (a huge key
+ * or primitive cannot push the output past `limit`), and object properties
+ * are visited incrementally via `for…in` + `hasOwnProperty`, so a large
+ * object is not enumerated/allocated up front and its values are only read as
+ * the budget allows. Note: for Proxy/exotic objects the engine invokes the
+ * `ownKeys` trap eagerly, so *key* enumeration may still touch every key;
+ * values are still read lazily and the output remains bounded.
+ */
+function formatBounded(data: unknown, limit: number): { text: string; truncated: boolean } {
+  const parts: string[] = [];
+  let length = 0;
+  let truncated = false;
+
+  const encode = (slice: string): string =>
+    slice.replace(/[\\"]/g, (m) => (m === '"' ? '\\"' : "\\\\"));
+
+  // Append a chunk but never exceed `limit`: oversized chunks are sliced to
+  // the remaining budget, so a huge key/primitive cannot blow past the limit.
+  const push = (chunk: string) => {
+    if (length >= limit) {
+      truncated = true;
+      return;
+    }
+    const room = limit - length;
+    if (chunk.length <= room) {
+      parts.push(chunk);
+      length += chunk.length;
+    } else {
+      parts.push(chunk.slice(0, room));
+      length = limit;
+      truncated = true;
+    }
+  };
+
+  // Push the budget ellipsis and always mark the preview as truncated.
+  const ellipsis = () => {
+    push("…");
+    truncated = true;
+  };
+
+  const walk = (value: unknown, depth: number, seen: unknown[]) => {
+    if (length >= limit) {
+      truncated = true;
+      return;
+    }
+    if (depth > MAX_PREVIEW_DEPTH) {
+      ellipsis();
+      return;
+    }
+
+    if (typeof value === "string") {
+      // Need room for two quotes and at least one content character.
+      if (limit - length < 3) {
+        ellipsis();
+        return;
+      }
+      push('"');
+      const innerRoom = limit - length - 1; // reserve the closing quote
+      const fits = value.length <= innerRoom;
+      // Slice before encoding so a huge string never builds a full transform.
+      const content = fits ? value : value.slice(0, innerRoom);
+      push(encode(content));
+      if (!fits) ellipsis();
+      push('"');
+      return;
+    }
+    if (value === null) {
+      push("null");
+      return;
+    }
+    if (value === undefined) {
+      push("undefined");
+      return;
+    }
+    const type = typeof value;
+    if (type === "number" || type === "boolean") {
+      push(String(value));
+      return;
+    }
+    if (type === "bigint") {
+      push(String(value) + "n");
+      return;
+    }
+
+    if (seen.indexOf(value) !== -1) {
+      push("…(circular)");
+      return;
+    }
+    const nextSeen = [...seen, value];
+
+    if (Array.isArray(value)) {
+      push("[");
+      const arr = value as unknown[];
+      for (let i = 0; i < arr.length; i++) {
+        if (length >= limit) {
+          ellipsis();
+          break;
+        }
+        if (i > 0) push(", ");
+        walk(arr[i], depth + 1, nextSeen);
+      }
+      if (length >= limit) {
+        if (!parts[parts.length - 1].startsWith("…")) ellipsis();
+      } else {
+        push("]");
+      }
+      return;
+    }
+
+    // Objects: iterate own enumerable string keys incrementally (for…in +
+    // hasOwnProperty) instead of `Object.keys`, so a large object is not
+    // enumerated/allocated up front. Huge keys are sliced to the remaining
+    // budget before encoding.
+    push("{");
+    let first = true;
+    for (const key in value) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+      if (length >= limit) {
+        ellipsis();
+        break;
+      }
+      if (!first) push(", ");
+      first = false;
+      const room = limit - length;
+      const keyPreview = key.length > room ? key.slice(0, room) : key;
+      push(encodeJsonString(keyPreview));
+      if (keyPreview.length !== key.length) truncated = true;
+      push(": ");
+      walk((value as Record<string, unknown>)[key], depth + 1, nextSeen);
+    }
+    if (length >= limit) {
+      if (!parts[parts.length - 1].startsWith("…")) ellipsis();
+    } else {
+      push("}");
+    }
+  };
+
+  walk(data, 0, []);
+  if (length > limit) truncated = true;
+  return { text: parts.join(""), truncated };
 }
 
 function joinClass(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
+}
+
+interface ToolCallValueProps {
+  value: unknown;
+  render?: (value: unknown) => ReactNode;
+  limit: number;
+  maxLimit: number;
+  showMore: string;
+  showLess: string;
+}
+
+/**
+ * Lazily renders a tool detail value inside the open Collapsible.Panel.
+ * Because Kumo's panel only mounts its children when open, this component's
+ * render — and therefore any serialization of `value` — only runs while the
+ * details are visible. Both the initial and expanded renders use a bounded,
+ * non-serializing preview (`formatBounded`), so a huge object is never fully
+ * stringified. Custom `render` escape hatches bypass the built-in bounds.
+ */
+function BoundedToolCallValue({
+  value,
+  limit,
+  maxLimit,
+  showMore,
+  showLess
+}: Omit<ToolCallValueProps, "render">) {
+  const [expandedValue, setExpandedValue] = useState(false);
+  const previewId = useId();
+  const activeLimit = expandedValue ? maxLimit : limit;
+  const preview = useMemo(() => formatBounded(value, activeLimit), [value, activeLimit]);
+  const canExpand = preview.truncated && activeLimit < maxLimit;
+
+  return (
+    <div className="agent-ui-tool-call__value">
+      <pre id={previewId} className="agent-ui-tool-call__pre">{preview.text}</pre>
+      {(canExpand || expandedValue) && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="agent-ui-tool-call__toggle-more"
+          aria-expanded={expandedValue}
+          aria-controls={previewId}
+          onClick={() => setExpandedValue((current) => !current)}
+        >
+          {expandedValue ? showLess : showMore}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function ToolCallValue(props: ToolCallValueProps) {
+  if (props.render) return <>{props.render(props.value)}</>;
+  return <BoundedToolCallValue {...props} />;
 }
 
 export const ToolCall = forwardRef<HTMLDivElement, ToolCallProps>(function ToolCall(
@@ -154,6 +406,8 @@ export const ToolCall = forwardRef<HTMLDivElement, ToolCallProps>(function ToolC
     onExpandedChange,
     renderInput,
     renderOutput,
+    detailChars,
+    maxDetailChars,
     onApprove,
     onReject,
     variant = "default",
@@ -184,8 +438,20 @@ export const ToolCall = forwardRef<HTMLDivElement, ToolCallProps>(function ToolC
     onExpandedChange?.(open);
   };
 
-  const renderSectionValue = (title: string, value: unknown, render?: (v: unknown) => ReactNode) =>
-    render ? render(value) : <pre className="agent-ui-tool-call__pre">{formatData(value)}</pre>;
+  // Normalize the optional `detailChars` to a safe non-negative integer.
+  const maxDetailLimit = normalizeMaxDetailChars(maxDetailChars);
+  const detailLimit = Math.min(normalizeDetailChars(detailChars), maxDetailLimit);
+
+  const renderSectionValue = (title: string, value: unknown, render?: (v: unknown) => ReactNode) => (
+    <ToolCallValue
+      value={value}
+      render={render}
+      limit={detailLimit}
+      maxLimit={maxDetailLimit}
+      showMore={label.showMore}
+      showLess={label.showLess}
+    />
+  );
 
   return (
     <div

@@ -65,6 +65,46 @@ export function AgentPanel({ chat }) {
 requires `chat.sendMessage` to render its default composer; without it, the transcript renders
 without an input.
 
+### Runtime ownership
+
+Agent UI only adapts and renders chat state. It does not replace the runtime features provided by
+Cloudflare Agents or Think.
+
+| Concern | Owner |
+| --- | --- |
+| Message, tool, reasoning, and attachment presentation | Agent UI |
+| Composer interactions and optional client-side UX limits | Agent UI |
+| Conversation state and persistence | Cloudflare Agents / Think |
+| Agent loop, context management, and compaction | Think or your harness |
+| Tool execution and durable recovery | Think / Agents SDK / your application |
+| Authorization and server-side payload limits | Your application |
+
+The adapter consumes the `useAgentChat` result as-is. It does not persist messages, execute tools,
+compact context, or create additional Durable Objects. It adapts the latest 100 messages by default,
+the preset mounts 50 at a time, and tool details use hard-bounded previews. These safeguards reduce
+browser work without changing the canonical SDK state. Consumers can raise or disable the message
+bounds, but custom payload renderers must provide their own limits.
+
+### Think compatibility
+
+Think and `AIChatAgent` use the same `useAgentChat` protocol, so no Think-specific UI adapter is
+required:
+
+```tsx
+const agent = useAgent({ agent: "ToolDemoAgent", name: conversationId });
+const chat = useAgentChat({ agent });
+const viewModel = useAgentChatUI(chat);
+
+return (
+  <AgentChat.Root viewModel={viewModel}>
+    <AgentChat.Messages maxVisibleMessages={50} />
+  </AgentChat.Root>
+);
+```
+
+The repository playground uses a real `Think<Env>` agent while Agent UI remains responsible only
+for the interface.
+
 ### Which should I use?
 
 <table>

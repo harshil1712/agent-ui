@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 import { useState, type ReactElement } from "react";
 import {
   AgentChatRoot,
@@ -93,6 +94,46 @@ const wrapper = (StoryComponent: () => ReactElement) => {
 
 export const Transcript: Story = {
   render: () => wrapper(() => <AgentChatMessages />),
+};
+
+function buildLongViewModel(): AgentChatViewModel {
+  const base = buildViewModel();
+  const messages: AgentChatMessageModel[] = [];
+  for (let i = 0; i < 8; i++) {
+    messages.push({
+      id: `m${i}`,
+      role: i % 2 === 0 ? "user" : "assistant",
+      text: i % 2 === 0 ? `Question ${i + 1}` : `Answer ${i + 1}`,
+      parts: [{ type: "text", text: i % 2 === 0 ? `Question ${i + 1}` : `Answer ${i + 1}` }],
+      isStreaming: false,
+      isAssistant: i % 2 === 1,
+      canRetry: false,
+      canEdit: i % 2 === 0,
+      isLast: i === 7,
+    });
+  }
+  return { ...base, messages, isIdle: false };
+}
+
+export const TranscriptWindow: Story = {
+  name: "maxVisibleMessages: show older",
+  render: () => (
+    <AgentChatRoot viewModel={buildLongViewModel()}>
+      <AgentChatMessages maxVisibleMessages={3} />
+    </AgentChatRoot>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Only the 3 most-recent messages are shown initially.
+    await expect(canvas.getByText("Answer 6")).toBeInTheDocument();
+    await expect(canvas.queryByText("Question 1")).not.toBeInTheDocument();
+    // Older messages are revealed one page at a time.
+    await userEvent.click(canvas.getByRole("button", { name: "Show older messages" }));
+    await expect(canvas.getByText("Question 3")).toBeInTheDocument();
+    await expect(canvas.queryByText("Question 1")).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Show older messages" }));
+    await expect(canvas.getByText("Question 1")).toBeInTheDocument();
+  },
 };
 
 export const Empty: Story = {

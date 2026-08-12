@@ -59,6 +59,28 @@ describe("AgentChatPreset", () => {
     expect(container.querySelector(".agent-ui-composer")).toBeNull();
   });
 
+  it("mounts only the latest 50 messages by default", () => {
+    const messages = Array.from({ length: 55 }, (_, index) =>
+      userMessage([{ type: "text", text: `message ${index}` }], `u${index}`)
+    );
+    const { container } = render(<AgentChatPreset chat={chat({ messages })} />);
+
+    expect(container.querySelectorAll("[data-role]")).toHaveLength(50);
+    expect(screen.queryByText("message 4")).not.toBeInTheDocument();
+    expect(screen.getByText("message 54")).toBeInTheDocument();
+  });
+
+  it("allows consumers to opt into mounting every adapted message", () => {
+    const messages = Array.from({ length: 55 }, (_, index) =>
+      userMessage([{ type: "text", text: `message ${index}` }], `u${index}`)
+    );
+    const { container } = render(
+      <AgentChatPreset chat={chat({ messages })} maxVisibleMessages={false} />
+    );
+
+    expect(container.querySelectorAll("[data-role]")).toHaveLength(55);
+  });
+
   it("forwards messageProps and composerProps resolvers", () => {
     render(
       <AgentChatPreset

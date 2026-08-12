@@ -190,3 +190,47 @@ export const CustomSlots: Story = {
     await expect(canvas.getByText("Runs in production.")).toBeInTheDocument();
   }
 };
+
+export const TruncatedLargeValue: Story = {
+  name: "Bounded detail: large payload truncated",
+  args: {
+    name: "listFiles",
+    status: "completed",
+    detailChars: 400,
+    output: {
+      files: Array.from({ length: 60 }, (_, i) => ({
+        name: `report-${String(i).padStart(2, "0")}.csv`,
+        size: 1024 * (i + 1),
+        contentType: "text/csv",
+        checksum: "sha256:".concat("a".repeat(64)),
+      })),
+    },
+  },
+  render: (args) => <InteractiveToolCall {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "View details" }));
+    await expect(canvas.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Show more" }));
+    await expect(canvas.getByRole("button", { name: "Show less" })).toBeInTheDocument();
+    await expect(canvas.getByText(/report-59\.csv/)).toBeInTheDocument();
+  },
+};
+
+export const LocalizedShowMore: Story = {
+  name: "Localized show-more labels",
+  args: {
+    name: "queryLogs",
+    status: "completed",
+    detailChars: 50,
+    output: { lines: Array.from({ length: 20 }, (_, i) => `line ${i}`) },
+    labels: { showMore: "Afficher plus", showLess: "Afficher moins" },
+  },
+  render: (args) => <InteractiveToolCall {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "View details" }));
+    const output = canvas.getByRole("region", { name: "Output" });
+    await expect(within(output).getByRole("button", { name: "Afficher plus" })).toBeInTheDocument();
+  },
+};

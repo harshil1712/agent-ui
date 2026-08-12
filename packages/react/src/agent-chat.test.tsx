@@ -628,3 +628,374 @@ describe("AgentChatMessages render overrides and resolvers", () => {
     expect(seen).toEqual([{ msgIndex: 0, partIndex: 0 }]);
   });
 });
+
+describe("AgentChatMessages transcript window", () => {
+  it("does not resolve or render parts from windowed-out messages", () => {
+    const toolProps = vi.fn(() => ({}));
+    const renderTool = vi.fn(() => <span>rendered tool</span>);
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            message({
+              id: "old",
+              parts: [
+                {
+                  type: "tool",
+                  toolCall: { name: "oldTool", status: "completed", output: { large: true } }
+                }
+              ]
+            }),
+            textMessage("Newest", { id: "new" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={1}
+        toolProps={toolProps}
+        renderTool={renderTool}
+      />
+    );
+
+    expect(toolProps).not.toHaveBeenCalled();
+    expect(renderTool).not.toHaveBeenCalled();
+    expect(screen.queryByText("rendered tool")).not.toBeInTheDocument();
+  });
+
+  it("renders the full transcript by default when maxVisibleMessages is omitted", () => {
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" })
+          ],
+          isIdle: false
+        })}
+      />
+    );
+    expect(screen.getByText("One")).toBeInTheDocument();
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show older messages" })).not.toBeInTheDocument();
+  });
+
+  it("renders only the most-recent messages and offers a show-older control", async () => {
+    const user = userEvent.setup();
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" }),
+            textMessage("Four", { id: "m4" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+    expect(screen.queryByText("Two")).not.toBeInTheDocument();
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.getByText("Four")).toBeInTheDocument();
+
+    const showOlder = screen.getByRole("button", { name: "Show older messages" });
+    await user.click(showOlder);
+    expect(screen.getByText("One")).toBeInTheDocument();
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(showOlder).not.toBeInTheDocument();
+  });
+
+  it("reveals older messages one page at a time", async () => {
+    const user = userEvent.setup();
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" }),
+            textMessage("Four", { id: "m4" }),
+            textMessage("Five", { id: "m5" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    expect(screen.getByText("Four")).toBeInTheDocument();
+    expect(screen.getByText("Five")).toBeInTheDocument();
+    expect(screen.queryByText("Two")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Show older messages" }));
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Show older messages" }));
+    expect(screen.getByText("One")).toBeInTheDocument();
+  });
+
+  it("honors a custom show-older label", () => {
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={1}
+        showOlderLabel="View earlier"
+      />
+    );
+    expect(screen.getByRole("button", { name: "View earlier" })).toBeInTheDocument();
+  });
+
+  it("keeps the newest message visible as the transcript grows", () => {
+    const vm = viewModel({
+      messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" })],
+      isIdle: false
+    });
+    const { rerender } = render(<AgentChatMessages viewModel={vm} maxVisibleMessages={2} />);
+    expect(screen.getByText("One")).toBeInTheDocument();
+
+    rerender(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" }), textMessage("Three", { id: "m3" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.getByText("Three")).toBeInTheDocument();
+  });
+
+  it("renders messages that arrive after an empty initial render", () => {
+    const { rerender } = render(
+      <AgentChatMessages viewModel={viewModel({})} maxVisibleMessages={2} />
+    );
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+
+    rerender(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    expect(screen.getByText("One")).toBeInTheDocument();
+    expect(screen.getByText("Two")).toBeInTheDocument();
+  });
+
+  it("adjusts the window when maxVisibleMessages changes", () => {
+    const { rerender } = render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" }), textMessage("Three", { id: "m3" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={1}
+      />
+    );
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+
+    rerender(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" }), textMessage("Three", { id: "m3" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={3}
+      />
+    );
+    expect(screen.getByText("One")).toBeInTheDocument();
+  });
+
+  it("clamps the window when messages shrink and clears on empty", () => {
+    const { rerender } = render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" }), textMessage("Three", { id: "m3" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    rerender(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("Two", { id: "m2" }), textMessage("Three", { id: "m3" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show older messages" })).not.toBeInTheDocument();
+  });
+
+  it("preserves a revealed larger window as the transcript grows", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" }),
+            textMessage("Four", { id: "m4" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    // Reveal all four.
+    await user.click(screen.getByRole("button", { name: "Show older messages" }));
+    expect(screen.getByText("One")).toBeInTheDocument();
+
+    // Grow to six: the revealed window of 4 is preserved (not snapped to 2),
+    // so m3..m6 are shown and m1/m2 remain behind the show-older control.
+    rerender(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" }),
+            textMessage("Four", { id: "m4" }),
+            textMessage("Five", { id: "m5" }),
+            textMessage("Six", { id: "m6" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+      />
+    );
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.getByText("Six")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+    expect(screen.queryByText("Two")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show older messages" })).toBeInTheDocument();
+  });
+
+  it("passes the canonical messageIndex within viewModel.messages when windowed", () => {
+    const seen: number[] = [];
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" }),
+            textMessage("Four", { id: "m4" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+        renderMessage={(msg, index) => {
+          seen.push(index);
+          return <div key={msg.id}>{msg.text}</div>;
+        }}
+      />
+    );
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.getByText("Four")).toBeInTheDocument();
+    expect(seen).toEqual([2, 3]);
+  });
+
+  it("passes the canonical messageIndex to the messageProps resolver when windowed", () => {
+    const seen: number[] = [];
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" }),
+            textMessage("Four", { id: "m4" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2}
+        messageProps={({ messageIndex }) => {
+          seen.push(messageIndex);
+          return {};
+        }}
+      />
+    );
+    expect(seen).toEqual([2, 3]);
+  });
+
+  it("normalizes a zero maxVisibleMessages to a page size of one", () => {
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={0}
+      />
+    );
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show older messages" })).toBeInTheDocument();
+  });
+
+  it("normalizes a negative maxVisibleMessages to a page size of one", () => {
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={-5}
+      />
+    );
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+  });
+
+  it("normalizes a non-finite maxVisibleMessages to a page size of one", () => {
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [textMessage("One", { id: "m1" }), textMessage("Two", { id: "m2" })],
+          isIdle: false
+        })}
+        maxVisibleMessages={Number.NaN}
+      />
+    );
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+  });
+
+  it("floors a fractional maxVisibleMessages", () => {
+    render(
+      <AgentChatMessages
+        viewModel={viewModel({
+          messages: [
+            textMessage("One", { id: "m1" }),
+            textMessage("Two", { id: "m2" }),
+            textMessage("Three", { id: "m3" })
+          ],
+          isIdle: false
+        })}
+        maxVisibleMessages={2.9}
+      />
+    );
+    // 2.9 floors to 2, so the oldest message is hidden behind the control.
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.queryByText("One")).not.toBeInTheDocument();
+  });
+});

@@ -11,6 +11,7 @@
     "release": "pnpm --filter @harshil1712/agent-ui build && changeset publish",
     "storybook": "pnpm --filter @harshil1712/agent-ui storybook",
     "test": "pnpm --recursive test",
+    "test:memory": "pnpm --filter @harshil1712/agent-ui build-storybook && pnpm --filter @harshil1712/agent-ui test:memory",
     "version-packages": "changeset version"
   },
   "devDependencies": {

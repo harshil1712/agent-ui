@@ -128,7 +128,7 @@ function App() {
         <div className="chat-header__title">
           <h1>Agent Chat</h1>
           <Text as="span" variant="secondary" size="sm">
-            {MODEL_LABEL} · Workers AI
+            {MODEL_LABEL} · Workers AI · Think
           </Text>
         </div>
         <div className="chat-header__actions">
@@ -168,8 +168,9 @@ function App() {
                   Chat with an agent on Cloudflare
                 </Text>
                 <Text as="p" variant="secondary">
-                  Ask about Workers AI — the agent can read the latest official
-                  documentation and stream a grounded answer in real time.
+                  Ask about Workers AI — the agent (built on @cloudflare/think)
+                  can read the latest official documentation and stream a
+                  grounded answer in real time.
                 </Text>
                 <div className="chat-suggestions">
                   {SUGGESTIONS.map((suggestion) => (

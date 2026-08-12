@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatStatus, UIMessage } from "ai";
+import type { AgentToolPart } from "../agent-message";
 import { useAgentChatUI, type AgentChatInput } from "./use-agent-chat-ui";
 
 function textPart(text: string) {
@@ -55,6 +56,64 @@ describe("useAgentChatUI", () => {
     expect(result.current.isIdle).toBe(false);
     expect(result.current.phase).toBe("ready");
     expect(result.current.busy).toBe(false);
+  });
+
+  it("adapts only the latest 100 messages by default", () => {
+    let omittedReads = 0;
+    const omitted = new Proxy(userMessage([textPart("old")], "u0"), {
+      get(target, property, receiver) {
+        omittedReads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    const recent = Array.from({ length: 100 }, (_, index) =>
+      userMessage([textPart(`message ${index}`)], `u${index + 1}`)
+    );
+
+    const { result } = renderHook(() =>
+      useAgentChatUI(chat({ messages: [omitted, ...recent] }))
+    );
+
+    expect(result.current.messages).toHaveLength(100);
+    expect(result.current.messages[0].id).toBe("u1");
+    expect(omittedReads).toBe(0);
+  });
+
+  it("supports a custom message bound or an explicitly unbounded adapter", () => {
+    const messages = Array.from({ length: 4 }, (_, index) =>
+      userMessage([textPart(`message ${index}`)], `u${index}`)
+    );
+    const { result, rerender } = renderHook(
+      ({ maxMessages }: { maxMessages: number | false }) =>
+        useAgentChatUI(chat({ messages }), { maxMessages }),
+      { initialProps: { maxMessages: 2 as number | false } }
+    );
+
+    expect(result.current.messages.map((message) => message.id)).toEqual(["u2", "u3"]);
+    rerender({ maxMessages: false });
+    expect(result.current.messages).toHaveLength(4);
+  });
+
+  it("joins copied message text lazily", () => {
+    let textReads = 0;
+    const part = {
+      type: "text" as const,
+      get text() {
+        textReads += 1;
+        return "Hello";
+      }
+    };
+    const { result } = renderHook(() =>
+      useAgentChatUI(chat({ messages: [userMessage([part])] }))
+    );
+
+    const readsAfterPartMapping = textReads;
+    expect(readsAfterPartMapping).toBeGreaterThan(0);
+    expect(result.current.messages[0].text).toBe("Hello");
+    expect(textReads).toBeGreaterThan(readsAfterPartMapping);
+    const readsAfterFirstCopy = textReads;
+    expect(result.current.messages[0].text).toBe("Hello");
+    expect(textReads).toBe(readsAfterFirstCopy);
   });
 
   it("derives busy and showPending from status", () => {
@@ -373,6 +432,29 @@ describe("useAgentChatUI", () => {
     expect(result.current.expanded).toEqual({ call_1: true });
   });
 
+  it("keeps cached parts stable when a controlled expansion object is recreated", () => {
+    const onExpandedChange = vi.fn();
+    const toolMessage = assistantMessage([
+      {
+        type: "tool-getSchedule",
+        toolCallId: "call_1",
+        state: "output-available",
+        input: {},
+        output: {}
+      }
+    ]);
+    const { result, rerender } = renderHook(
+      ({ expanded }: { expanded: Record<string, boolean> }) =>
+        useAgentChatUI(chat({ messages: [toolMessage] }), { expanded, onExpandedChange }),
+      { initialProps: { expanded: { call_1: false } } }
+    );
+    const before = result.current.messages[0].parts[0];
+
+    rerender({ expanded: { call_1: false } });
+
+    expect(result.current.messages[0].parts[0]).toBe(before);
+  });
+
   it("exposes copy/retry actions from options", () => {
     const onCopy = vi.fn();
     const onRetry = vi.fn();
@@ -403,5 +485,151 @@ describe("useAgentChatUI", () => {
     );
     const [tool] = result.current.messages[0].parts;
     expect(tool).toMatchObject({ type: "tool", toolCall: { description: "Check things." } });
+  });
+
+  it("does not re-normalize unchanged messages when a new message streams in", () => {
+    const historical = userMessage([textPart("Hello?")], "u1");
+    const { result, rerender } = renderHook(
+      ({ messages, isStreaming }: { messages: AgentChatInput["messages"]; isStreaming?: boolean }) =>
+        useAgentChatUI(chat({ messages, isStreaming })),
+      { initialProps: { messages: [historical], isStreaming: false } }
+    );
+
+    const beforeTextPart = result.current.messages[0].parts[0];
+
+    // A new assistant message arrives while streaming. The historical message
+    // object is unchanged (same reference), so its normalized text part is
+    // reused verbatim (same object reference) rather than rebuilt.
+    const streaming = assistantMessage([textPart("New…")], "a1");
+    rerender({ messages: [historical, streaming], isStreaming: true });
+
+    expect(result.current.messages).toHaveLength(2);
+    // The message model wrapper is rebuilt each render (streaming/last flags),
+    // but the cached content (here, the text part) is reused by reference.
+    expect(result.current.messages[0].parts[0]).toBe(beforeTextPart);
+    expect(result.current.messages[0].text).toBe("Hello?");
+    expect(result.current.messages[1].isStreaming).toBe(true);
+  });
+
+  it("reuses unchanged tool payloads by reference across streaming updates", () => {
+    const toolMessage = assistantMessage(
+      [
+        { type: "tool-getSchedule", toolCallId: "call_1", state: "output-available", input: { q: 1 }, output: { ok: true } }
+      ],
+      "a1"
+    );
+    const { result, rerender } = renderHook(
+      ({ messages, isStreaming }: { messages: AgentChatInput["messages"]; isStreaming?: boolean }) =>
+        useAgentChatUI(chat({ messages, isStreaming })),
+      { initialProps: { messages: [toolMessage], isStreaming: false } }
+    );
+    const before = result.current.messages[0].parts[0];
+
+    rerender({ messages: [toolMessage, assistantMessage([textPart("more")], "a2")], isStreaming: true });
+    const [tool] = result.current.messages[0].parts;
+    expect(tool).toMatchObject({ type: "tool" });
+    if (tool?.type === "tool") {
+      // The cached payload is re-used by reference (shallow), not re-normalized.
+      expect(tool.toolCall.input).toBe((before as AgentToolPart).toolCall.input);
+      expect(tool.toolCall.output).toBe((before as AgentToolPart).toolCall.output);
+    }
+  });
+
+  it("keeps expansion toggling working after messages are cached", () => {
+    const toolMessage = assistantMessage(
+      [{ type: "tool-getSchedule", toolCallId: "call_1", state: "output-available", input: {}, output: {} }],
+      "a1"
+    );
+    const { result, rerender } = renderHook(
+      ({ messages }: { messages: AgentChatInput["messages"] }) => useAgentChatUI(chat({ messages })),
+      { initialProps: { messages: [toolMessage] } }
+    );
+    expect(result.current.expanded["call_1"]).toBe(false);
+
+    act(() => result.current.toggleExpanded("call_1"));
+    expect(result.current.expanded["call_1"]).toBe(true);
+
+    // A subsequent streaming update to an unrelated message must not reset it.
+    rerender({ messages: [toolMessage, assistantMessage([textPart("hi")], "a2")] });
+    expect(result.current.expanded["call_1"]).toBe(true);
+  });
+
+  it("keeps tool approvals working after messages are cached", () => {
+    const addToolApprovalResponse = vi.fn();
+    const approvalMessage = assistantMessage(
+      [
+        {
+          type: "tool-sendReport",
+          toolCallId: "call_1",
+          state: "approval-requested",
+          input: { limit: 5 },
+          approval: { id: "approval-1" }
+        }
+      ],
+      "a1"
+    );
+    const { result, rerender } = renderHook(
+      ({ messages, add }: { messages: AgentChatInput["messages"]; add?: AgentChatInput["addToolApprovalResponse"] }) =>
+        useAgentChatUI(chat({ messages, addToolApprovalResponse: add })),
+      { initialProps: { messages: [approvalMessage], add: addToolApprovalResponse } }
+    );
+
+    const [tool] = result.current.messages[0].parts;
+    if (tool?.type === "tool") {
+      tool.toolCall.onApprove?.();
+      expect(addToolApprovalResponse).toHaveBeenCalledWith({ id: "approval-1", approved: true });
+    }
+
+    // Still works after the message is cached and an unrelated message streams.
+    rerender({ messages: [approvalMessage, assistantMessage([textPart("hi")], "a2")], add: addToolApprovalResponse });
+    const [tool2] = result.current.messages[0].parts;
+    if (tool2?.type === "tool") {
+      tool2.toolCall.onReject?.();
+      expect(addToolApprovalResponse).toHaveBeenCalledWith({ id: "approval-1", approved: false });
+    }
+  });
+
+  it("invalidates the content cache when toolDescriptions change", () => {
+    const toolMessage = assistantMessage(
+      [{ type: "tool-check", toolCallId: "c", state: "input-available", input: {} }],
+      "a1"
+    );
+    const { result, rerender } = renderHook(
+      ({ descriptions }: { descriptions?: Record<string, string> }) =>
+        useAgentChatUI(chat({ messages: [toolMessage] }), { toolDescriptions: descriptions }),
+      { initialProps: { descriptions: { check: "First" } } }
+    );
+    expect(result.current.messages[0].parts[0]).toMatchObject({
+      type: "tool",
+      toolCall: { description: "First" }
+    });
+
+    rerender({ descriptions: { check: "Second" } });
+    expect(result.current.messages[0].parts[0]).toMatchObject({
+      type: "tool",
+      toolCall: { description: "Second" }
+    });
+  });
+
+  it("prunes internal expansion entries when their message disappears", () => {
+    const toolMessage = assistantMessage(
+      [{ type: "tool-getSchedule", toolCallId: "gone", state: "output-available", input: {}, output: {} }],
+      "a1"
+    );
+    const keptMessage = assistantMessage(
+      [{ type: "tool-getSchedule", toolCallId: "kept", state: "output-available", input: {}, output: {} }],
+      "a2"
+    );
+    const { result, rerender } = renderHook(
+      ({ messages }: { messages: AgentChatInput["messages"] }) => useAgentChatUI(chat({ messages })),
+      { initialProps: { messages: [toolMessage, keptMessage] } }
+    );
+    act(() => result.current.setExpanded("gone", true));
+    act(() => result.current.setExpanded("kept", true));
+
+    rerender({ messages: [keptMessage] });
+
+    expect(result.current.expanded["kept"]).toBe(true);
+    expect(result.current.expanded["gone"]).toBeUndefined();
   });
 });

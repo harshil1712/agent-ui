@@ -250,4 +250,328 @@ describe("ToolCall", () => {
     expect(screen.getByText("Leading marker")).toBeInTheDocument();
     expect(screen.getByText("Footer note")).toBeInTheDocument();
   });
+
+  it("does not serialize detail payloads while the details panel is closed", async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(JSON, "stringify");
+    const input = { query: "Agents" };
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        input={input}
+        output={{ matches: 5 }}
+      />
+    );
+
+    // Closed: the default rendering must not JSON.stringify the payloads.
+    expect(spy).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    // Kumo's Collapsible may stringify internally on open, but the payload is
+    // never passed to JSON.stringify while its value fits within the limit.
+    expect(spy.mock.calls.some(([arg]) => arg === input)).toBe(false);
+    spy.mockRestore();
+  });
+
+  it("does not traverse detail payloads while the details panel is closed", () => {
+    let reads = 0;
+    const output = new Proxy({ blob: "x".repeat(1000) }, {
+      get(target, property, receiver) {
+        reads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+
+    render(<ControlledToolCall name="getData" status="completed" output={output} />);
+
+    expect(reads).toBe(0);
+  });
+
+  it("never fully serializes a huge object, including after Show more", async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(JSON, "stringify");
+    const big = "x".repeat(2000);
+    const payload = { blob: big };
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={payload}
+        detailChars={200}
+        maxDetailChars={400}
+      />
+    );
+
+    // Opening the panel must not fully serialize the large payload; the
+    // bounded preview (which avoids JSON.stringify) is shown instead.
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    expect(spy.mock.calls.some(([arg]) => arg === payload)).toBe(false);
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(big))).not.toBeInTheDocument();
+
+    // Expanded details remain bounded instead of fully serializing the payload.
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(spy.mock.calls.some(([arg]) => arg === payload)).toBe(false);
+    expect(screen.queryByText(new RegExp(big))).not.toBeInTheDocument();
+    const pre = document.querySelector<HTMLElement>(".agent-ui-tool-call__pre");
+    expect(pre?.textContent?.length ?? 0).toBeLessThanOrEqual(405);
+    spy.mockRestore();
+  });
+
+  it("slices top-level strings cheaply without JSON.stringify", async () => {
+    const user = userEvent.setup();
+    const spy = vi.spyOn(JSON, "stringify");
+    const long = "x".repeat(5000);
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        input={long}
+        detailChars={100}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    // Opening a large top-level string slices it cheaply; it is never JSON-serialized.
+    expect(spy.mock.calls.some(([arg]) => arg === long)).toBe(false);
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+    spy.mockRestore();
+  });
+
+  it("renders circular structures in the bounded preview without throwing", async () => {
+    const user = userEvent.setup();
+    const circular: Record<string, unknown> = { name: "root" };
+    circular.self = circular;
+    render(
+      <ControlledToolCall name="getData" status="completed" output={circular} />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    expect(screen.getByText(/\(circular\)/)).toBeInTheDocument();
+  });
+
+  it("keeps circular data bounded after Show more without throwing", async () => {
+    const user = userEvent.setup();
+    const circular: Record<string, unknown> = { name: "root" };
+    circular.self = circular;
+    circular.items = Array.from({ length: 40 }, (_, i) => `item ${i}`);
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={circular}
+        detailChars={60}
+        maxDetailChars={120}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getByText(/\(circular\)/)).toBeInTheDocument();
+  });
+
+  it("does not serialize when there is nothing to serialize while closed", () => {
+    const spy = vi.spyOn(JSON, "stringify");
+    render(<ToolCall name="getData" status="pending" input={{ q: 1 }} />);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("truncates large detail values behind an accessible show-more toggle", async () => {
+    const user = userEvent.setup();
+    const big = "x".repeat(1000);
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ blob: big }}
+        detailChars={200}
+        maxDetailChars={400}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+
+    const showMore = screen.getByRole("button", { name: "Show more" });
+    expect(showMore).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(new RegExp(big))).not.toBeInTheDocument();
+
+    await user.click(showMore);
+    expect(screen.queryByText(new RegExp(big))).not.toBeInTheDocument();
+    const pre = document.querySelector<HTMLElement>(".agent-ui-tool-call__pre");
+    expect(pre?.textContent?.length ?? 0).toBeLessThanOrEqual(405);
+    const showLess = screen.getByRole("button", { name: "Show less" });
+    expect(showLess).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(showLess);
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+  });
+
+  it("does not truncate values that fit within the limit", async () => {
+    const user = userEvent.setup();
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ matches: 5 }}
+        detailChars={200}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    expect(screen.getByText(/"matches": 5/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  it("custom renderers bypass serialization and truncation", async () => {
+    const user = userEvent.setup();
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ blob: "x".repeat(1000) }}
+        detailChars={10}
+        renderOutput={(output) => <div>OUT:{(output as any).blob.length}</div>}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    expect(screen.getByText("OUT:1000")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show less" })).not.toBeInTheDocument();
+  });
+
+  it("bounds output for an object with a huge key", async () => {
+    const user = userEvent.setup();
+    const hugeKey = "k".repeat(100000);
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ [hugeKey]: 1 }}
+        detailChars={200}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    const pre = document.querySelector<HTMLElement>(".agent-ui-tool-call__pre");
+    expect(pre?.textContent?.length ?? 0).toBeLessThanOrEqual(205);
+    expect(pre?.textContent).not.toContain(hugeKey);
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+  });
+
+  it("bounds output for a huge string value", async () => {
+    const user = userEvent.setup();
+    const huge = "x".repeat(100000);
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ blob: huge }}
+        detailChars={200}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    const pre = document.querySelector<HTMLElement>(".agent-ui-tool-call__pre");
+    expect(pre?.textContent?.length ?? 0).toBeLessThanOrEqual(205);
+    expect(pre?.textContent).not.toContain(huge);
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+  });
+
+  it("does not read every value of a large object during the bounded preview", async () => {
+    const user = userEvent.setup();
+    const target: Record<string, unknown> = {};
+    for (let i = 0; i < 500; i++) target[`k${i}`] = `value ${i}`;
+    let reads = 0;
+    const proxy = new Proxy(target, {
+      get(t, p, r) {
+        reads += 1;
+        return Reflect.get(t, p, r);
+      }
+    });
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={proxy}
+        detailChars={100}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+    // The bounded preview must not have read every value (the engine may still
+    // enumerate keys via the ownKeys trap, but values are read lazily).
+    expect(reads).toBeLessThan(500);
+  });
+
+  it("normalizes non-finite detailChars to the default limit", async () => {
+    const user = userEvent.setup();
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ matches: 5 }}
+        detailChars={Number.NaN}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    // Default 5000 limit: a small value is not truncated.
+    expect(screen.getByText(/"matches": 5/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  it("treats maxDetailChars as a hard ceiling below the preview request", async () => {
+    const user = userEvent.setup();
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ blob: "x".repeat(1000) }}
+        detailChars={500}
+        maxDetailChars={100}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+
+    const pre = document.querySelector<HTMLElement>(".agent-ui-tool-call__pre");
+    expect(pre?.textContent?.length ?? 0).toBeLessThanOrEqual(105);
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  it("uses a bounded 20000-character expanded preview by default", async () => {
+    const user = userEvent.setup();
+    const huge = "x".repeat(30000);
+    render(
+      <ControlledToolCall name="getData" status="completed" output={{ blob: huge }} />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+
+    const pre = document.querySelector<HTMLElement>(".agent-ui-tool-call__pre");
+    expect(pre?.textContent?.length ?? 0).toBeLessThanOrEqual(20005);
+    expect(pre?.textContent).not.toContain(huge);
+  });
+
+  it("floors fractional detailChars to an integer limit", async () => {
+    const user = userEvent.setup();
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ blob: "x".repeat(50) }}
+        detailChars={10.9}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    // 10.9 floors to 10, so the 50-char value is truncated.
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+  });
+
+  it("clamps negative detailChars to zero (everything truncated)", async () => {
+    const user = userEvent.setup();
+    render(
+      <ControlledToolCall
+        name="getData"
+        status="completed"
+        output={{ matches: 5 }}
+        detailChars={-3}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "View details" }));
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+  });
 });

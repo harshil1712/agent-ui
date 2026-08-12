@@ -1,11 +1,14 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   type ComponentPropsWithoutRef,
   type CSSProperties,
   type ReactNode
 } from "react";
+import { Button } from "@cloudflare/kumo";
 import {
   AgentMessage,
   type AgentCustomPart,
@@ -241,12 +244,34 @@ export interface AgentChatMessagesProps
   renderEmpty?: () => ReactNode;
   /** Label for the recovery notice. Defaults to `"Recovering interrupted turn…"`. */
   recoveringLabel?: string;
+  /**
+   * Opt-in transcript window: initially render this many most-recent messages
+   * and use the same value as the page size when revealing older messages. The
+   * canonical view model stays untouched; this only affects how many messages
+   * this presentational layer renders. Omit to render the full transcript.
+   * Invalid values (zero, negative, non-finite) are normalized to `1`;
+   * fractional values are floored.
+   */
+  maxVisibleMessages?: number;
+  /** Label for the "show older" control. Defaults to `"Show older messages"`. */
+  showOlderLabel?: string;
   className?: string;
   style?: CSSProperties;
 }
 
 function joinClass(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
+}
+
+/**
+ * Normalize the optional `maxVisibleMessages` prop to a safe, positive, finite
+ * page size. `undefined` keeps full-transcript behavior; invalid values (zero,
+ * negative, non-finite) become `1`; fractional values are floored.
+ */
+function normalizePageSize(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  return Math.max(1, Math.floor(value));
 }
 
 /**
@@ -285,6 +310,8 @@ export function AgentChatMessages({
   empty,
   renderEmpty,
   recoveringLabel = "Recovering interrupted turn…",
+  maxVisibleMessages,
+  showOlderLabel = "Show older messages",
   className,
   style,
   role = "region",
@@ -307,9 +334,53 @@ export function AgentChatMessages({
     actions
   } = viewModel;
 
+  // Optional transcript windowing (presentation-level only). When
+  // `maxVisibleMessages` is set, only the most-recent `visibleCount` messages
+  // are rendered and a "show older" control reveals earlier ones. The view
+  // model is untouched. The page size is normalized to a safe positive value.
+  const pageSize = normalizePageSize(maxVisibleMessages);
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(pageSize ?? messages.length, messages.length)
+  );
+  // Whether the user has revealed an older page at least once. Once set, a
+  // larger revealed window is preserved across growth instead of snapping
+  // back to the default window.
+  const [revealed, setRevealed] = useState(false);
+
+  // Reconcile the window as messages grow, shrink, or clear and as
+  // `maxVisibleMessages` changes:
+  // - The default window always tracks `min(pageSize, length)`, so an empty
+  //   initial render correctly shows messages once they arrive and grows with
+  //   the tail up to the cap.
+  // - A revealed larger window is preserved on growth (never shrunk back to
+  //   the default) but is clamped to the number of messages that exist.
+  // - When `maxVisibleMessages` is omitted, the full transcript is shown.
+  useEffect(() => {
+    setVisibleCount((current) => {
+      if (pageSize === undefined) return messages.length;
+      const defaultWindow = Math.min(pageSize, messages.length);
+      const grown = Math.max(current, defaultWindow);
+      const target = revealed ? grown : Math.min(grown, defaultWindow);
+      return Math.min(target, messages.length);
+    });
+  }, [messages.length, pageSize, revealed]);
+
+  const showOlder = pageSize !== undefined && visibleCount < messages.length;
+  const revealOlder = () => {
+    if (pageSize === undefined) return;
+    setRevealed(true);
+    setVisibleCount((current) => Math.min(messages.length, current + pageSize));
+  };
+  const visibleMessages = pageSize === undefined
+    ? messages
+    : messages.slice(messages.length - visibleCount);
+  // Canonical index of the first rendered message within `viewModel.messages`.
+  const visibleOffset = messages.length - visibleMessages.length;
+
   const rendered = useMemo(
     () =>
-      messages.map((message, messageIndex) => {
+      visibleMessages.map((message, relativeIndex) => {
+        const messageIndex = visibleOffset + relativeIndex;
         if (renderMessage) return renderMessage(message, messageIndex);
 
         const transformedParts = message.parts.map((part, partIndex) => {
@@ -439,7 +510,8 @@ export function AgentChatMessages({
       }),
     [
       viewModel,
-      messages,
+      visibleMessages,
+      visibleOffset,
       actions,
       renderMessage,
       messageProps,
@@ -490,6 +562,17 @@ export function AgentChatMessages({
     };
     content = (
       <>
+        {showOlder && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="agent-ui-chat-messages__show-older"
+            onClick={revealOlder}
+          >
+            {showOlderLabel}
+          </Button>
+        )}
         {rendered}
         {showPending &&
           (renderPending

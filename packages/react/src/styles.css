@@ -166,6 +166,29 @@
   word-break: break-word;
 }
 
+.agent-ui-tool-call__value {
+  display: grid;
+  gap: 4px;
+}
+
+.agent-ui-tool-call__toggle-more {
+  width: fit-content;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-color-kumo-link, #0867c5);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agent-ui-tool-call__toggle-more:hover,
+.agent-ui-tool-call__toggle-more:focus-visible {
+  background: var(--color-kumo-tint, rgb(0 0 0 / 4%));
+}
+
 .agent-ui-tool-call--compact .agent-ui-tool-call__pre {
   font-size: 11px;
   padding: 8px 10px;
@@ -511,6 +534,24 @@
   color: var(--text-color-kumo-subtle, #737373);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.agent-ui-chat-messages__show-older {
+  width: fit-content;
+  padding: 4px 10px;
+  border: 1px solid var(--color-kumo-hairline, #e0e0e0);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-color-kumo-link, #0867c5);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agent-ui-chat-messages__show-older:hover,
+.agent-ui-chat-messages__show-older:focus-visible {
+  background: var(--color-kumo-tint, rgb(0 0 0 / 4%));
 }
 
 .agent-ui-chat-messages__empty {

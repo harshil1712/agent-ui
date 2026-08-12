@@ -1,12 +1,6 @@
-import { AIChatAgent } from "@cloudflare/ai-chat";
+import { Think } from "@cloudflare/think";
 import { routeAgentRequest } from "agents";
-import {
-  convertToModelMessages,
-  pruneMessages,
-  stepCountIs,
-  streamText,
-  tool,
-} from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 import { createWorkersAI } from "workers-ai-provider";
 
@@ -88,35 +82,22 @@ const checkCloudflareDocs = tool({
   },
 });
 
-const tools = { checkCloudflareDocs };
+export class ToolDemoAgent extends Think<Env> {
+  getModel() {
+    return createWorkersAI({ binding: this.env.AI })(MODEL_ID);
+  }
 
-export class ToolDemoAgent extends AIChatAgent<Env> {
-  maxPersistedMessages = 100;
+  getSystemPrompt() {
+    return [
+      "You are a helpful assistant embedded in a chat playground demo.",
+      "You are running on Cloudflare Workers AI (GLM-4.7-Flash) via @cloudflare/think.",
+      "When asked about Workers AI, use the checkCloudflareDocs tool and ground the answer in the returned documentation.",
+      "Keep answers friendly and concise.",
+    ].join("\n");
+  }
 
-  async onChatMessage(
-    onFinish: Parameters<AIChatAgent<Env>["onChatMessage"]>[0],
-    options?: Parameters<AIChatAgent<Env>["onChatMessage"]>[1],
-  ) {
-    const workersai = createWorkersAI({ binding: this.env.AI });
-    const result = streamText({
-      model: workersai(MODEL_ID),
-      system: [
-        "You are a helpful assistant embedded in a chat playground demo.",
-        "You are running on Cloudflare Workers AI (GLM-4.7-Flash).",
-        "When asked about Workers AI, use the checkCloudflareDocs tool and ground the answer in the returned documentation.",
-        "Keep answers friendly and concise.",
-      ].join("\n"),
-      messages: pruneMessages({
-        messages: await convertToModelMessages(this.messages),
-        toolCalls: "before-last-2-messages",
-        reasoning: "before-last-message",
-      }),
-      tools,
-      stopWhen: stepCountIs(5),
-      abortSignal: options?.abortSignal,
-      onFinish,
-    });
-    return result.toUIMessageStreamResponse();
+  getTools() {
+    return { checkCloudflareDocs };
   }
 }
 

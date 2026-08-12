@@ -105,3 +105,44 @@ export function AgentPanel({ chat }) {
 
 See the <a target="_top" href="/?path=/docs/agent-ui-architecture--docs">Architecture</a> guide to
 choose between the core and adapter APIs for your use case.
+
+## Browser performance safeguards
+
+The adapter and preset bound the work Agent UI adds on top of the canonical SDK state:
+
+- **Adapter message bound** — `useAgentChatUI` adapts the latest 100 messages by default. Change the
+  bound with `options.maxMessages`, or pass `false` only when you intentionally need the complete
+  transcript in the browser-side view model. The source `chat.messages` array is never modified.
+
+  ```tsx
+  const viewModel = useAgentChatUI(chat, { maxMessages: 200 });
+  ```
+
+- **Preset transcript window** — `AgentChat.Preset` mounts the latest 50 adapted messages by
+  default. Pass `maxVisibleMessages={false}` to mount all adapted messages.
+
+- **Transcript window** — pass `maxVisibleMessages` to `AgentChatMessages` to initially render the
+  most recent messages and reveal older messages in pages. The canonical view model is untouched.
+
+  ```tsx
+  <AgentChat.Messages viewModel={viewModel} maxVisibleMessages={10} />
+  ```
+
+- **Attachment validation** — pass `maxFiles` / `maxSize` to `useAgentComposer` to reject files
+  client-side. Rejected files are reported through `onRejectedFiles` and `rejectedFiles`; they never
+  reach `sendMessage`. This is a UX guard, not server validation.
+
+  ```tsx
+  const composer = useAgentComposer({
+    sendMessage,
+    maxFiles: 5,
+    maxSize: 10 * 1024 * 1024,
+    onRejectedFiles: (rejected) => console.warn("Rejected", rejected),
+  });
+  ```
+
+- **Bounded tool details** — `ToolCall` traverses detail payloads lazily (only while the details are
+  open). The initial preview defaults to 5,000 characters; "Show more" increases that to a bounded
+  20,000-character preview. Tune these with `detailChars` and `maxDetailChars`. The built-in renderer
+  enforces an absolute 100,000-character ceiling and never fully serializes arbitrary payloads.
+  Custom `renderInput`/`renderOutput` bypass these safeguards and must enforce their own bounds.

@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 import type { UIMessage } from "ai";
 import { AgentChatPreset } from "./agent-chat-preset";
 import type { AgentComposerSendMessage } from "./use-agent-composer";
+import { useAgentComposer } from "./use-agent-composer";
+import { AgentComposer } from "../agent-composer";
+import { useState } from "react";
 
 const meta = {
   title: "Agent UI/AgentChatPreset",
@@ -103,6 +107,49 @@ export const CustomizedComposer: Story = {
       labels: { send: "Go", stop: "Halt" },
       submitOnEnter: true,
     }),
+  },
+};
+
+function ValidatedComposer() {
+  const composer = useAgentComposer({
+    sendMessage: SEND,
+    maxFiles: 2,
+  });
+  const [value, setValue] = useState("");
+  return (
+    <div style={{ display: "grid", gap: 8, width: "100%" }}>
+      <AgentComposer
+        value={value}
+        onValueChange={setValue}
+        attachments={composer.attachments}
+        onAddAttachments={composer.handleAddAttachments}
+        onRemoveAttachment={composer.handleRemoveAttachment}
+        multiple
+        onSubmit={(v) => void composer.submit(v)}
+      />
+      {composer.rejectedFiles.length > 0 && (
+        <p style={{ fontSize: 12, color: "var(--color-kumo-danger)" }}>
+          {composer.rejectedFiles.length} file(s) rejected (max {2} files allowed).
+        </p>
+      )}
+    </div>
+  );
+}
+
+export const AttachmentValidation: Story = {
+  name: "useAgentComposer: maxFiles client-side rejection",
+  args: { chat: { ...baseChat, sendMessage: SEND } },
+  render: () => <ValidatedComposer />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const fileInput = canvasElement.querySelector<HTMLInputElement>("[data-agent-ui-file-input]");
+    if (!fileInput) throw new Error("file input not found");
+    await userEvent.upload(fileInput, [
+      new File(["a"], "a.txt", { type: "text/plain" }),
+      new File(["b"], "b.txt", { type: "text/plain" }),
+      new File(["c"], "c.txt", { type: "text/plain" }),
+    ]);
+    await expect(canvas.getByText(/1 file\(s\) rejected/)).toBeInTheDocument();
   },
 };
 

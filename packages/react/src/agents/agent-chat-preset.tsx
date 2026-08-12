@@ -67,6 +67,11 @@ export interface AgentChatPresetProps {
   renderEmpty?: () => ReactNode;
   /** Label for the recovery notice. */
   recoveringLabel?: string;
+  /**
+   * Maximum recent messages mounted initially. Defaults to `50`; pass `false`
+   * to mount every message adapted by `useAgentChatUI`.
+   */
+  maxVisibleMessages?: number | false;
   /** Resolver returning props merged onto the default `AgentComposer`. */
   composerProps?: (context: AgentChatComposerContext) => Partial<AgentComposerProps>;
   /**
@@ -110,6 +115,7 @@ export function AgentChatPreset({
   empty,
   renderEmpty,
   recoveringLabel,
+  maxVisibleMessages = 50,
   composerProps,
   renderComposer,
   className,
@@ -180,6 +186,7 @@ export function AgentChatPreset({
           empty={empty}
           renderEmpty={renderEmpty}
           recoveringLabel={recoveringLabel}
+          maxVisibleMessages={maxVisibleMessages === false ? undefined : maxVisibleMessages}
         />
         {hasComposer &&
           (renderComposer

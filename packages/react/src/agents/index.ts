@@ -36,6 +36,8 @@ export type { AgentChatInput, UseAgentChatUIOptions } from "./use-agent-chat-ui"
 export { useAgentComposer } from "./use-agent-composer";
 export type {
   AgentComposerSendMessage,
+  AgentRejectedFile,
+  AgentRejectedFileReason,
   UseAgentComposerOptions,
   UseAgentComposerResult
 } from "./use-agent-composer";
