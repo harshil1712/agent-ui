@@ -1,0 +1,23 @@
+README.md
+  s_81fe1544503f0c::t_83dbccfe9332b8 75-77,95-96
+apps/playground/index.html
+  s_81fe1544503f0c::t_11050f8184dfd9 7
+apps/playground/wrangler.jsonc
+  s_81fe1544503f0c::t_702bc32a447131 17-20,28-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f90cd55d54a1934295b687d495992da169b3a1bd",
+  "prompts": {},
+  "sessions": {
+    "s_81fe1544503f0c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00ab2625cffeWE3HVY08k2MX1x",
+        "model": "@cf/deepseek-ai/deepseek-v4-flash-0731"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
