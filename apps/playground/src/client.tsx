@@ -17,7 +17,12 @@ import { createRoot } from "react-dom/client";
 
 const MODEL_LABEL = "GLM-4.7-Flash";
 
-const STORAGE_KEY = "agent-ui-playground.chat-name";
+type Runtime = "agents-sdk" | "think";
+
+const RUNTIMES: { id: Runtime; href: string; label: string }[] = [
+  { id: "agents-sdk", href: "/agents-sdk", label: "Agents SDK" },
+  { id: "think", href: "/think", label: "Think" },
+];
 
 const SUGGESTIONS = [
   "What is Workers AI?",
@@ -29,13 +34,47 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   checkCloudflareDocs: "Read the official Workers AI documentation.",
 };
 
-/** Read (or mint) a per-browser conversation id so each browser gets its own thread. */
-function getBrowserChatName(): string {
+const RUNTIME_META: Record<
+  Runtime,
+  {
+    agent: string;
+    title: string;
+    subtitle: string;
+    heading: string;
+    copy: string;
+    storageKey: string;
+  }
+> = {
+  "agents-sdk": {
+    agent: "ToolDemoAgent",
+    title: "Agents SDK Chat",
+    subtitle: `${MODEL_LABEL} · Workers AI · @cloudflare/ai-chat`,
+    heading: "Chat with an agent on the Cloudflare Agents SDK",
+    copy: "This agent is a classic AIChatAgent from @cloudflare/ai-chat. Ask about Workers AI — it reads the latest official documentation and streams a grounded answer in real time.",
+    storageKey: "agent-ui-playground.chat-name",
+  },
+  think: {
+    agent: "ThinkDemoAgent",
+    title: "Think Chat",
+    subtitle: `${MODEL_LABEL} · Workers AI · @cloudflare/think`,
+    heading: "Chat with an agent on @cloudflare/think",
+    copy: "This agent extends Think and uses the same documentation tool. Ask about Workers AI — it reads the latest official documentation and streams a grounded answer in real time.",
+    storageKey: "agent-ui-playground.chat-name.think",
+  },
+};
+
+/** Resolve the runtime from the URL path: /think -> think, everything else -> agents-sdk. */
+function getRuntime(): Runtime {
+  return window.location.pathname.startsWith("/think") ? "think" : "agents-sdk";
+}
+
+/** Read (or mint) a per-browser conversation id so each browser gets its own thread per runtime. */
+function getBrowserChatName(storageKey: string): string {
   try {
-    const existing = localStorage.getItem(STORAGE_KEY);
+    const existing = localStorage.getItem(storageKey);
     if (existing) return existing;
     const id = crypto.randomUUID();
-    localStorage.setItem(STORAGE_KEY, id);
+    localStorage.setItem(storageKey, id);
     return id;
   } catch {
     return crypto.randomUUID();
@@ -43,10 +82,13 @@ function getBrowserChatName(): string {
 }
 
 function App() {
-  const [chatName] = useState<string>(() => getBrowserChatName());
+  const [runtime] = useState<Runtime>(() => getRuntime());
+  const meta = RUNTIME_META[runtime];
+
+  const [chatName] = useState<string>(() => getBrowserChatName(meta.storageKey));
 
   const agent = useAgent({
-    agent: "ToolDemoAgent",
+    agent: meta.agent,
     name: chatName,
   });
 
@@ -126,11 +168,27 @@ function App() {
     <main className="chat-shell">
       <header className="chat-header">
         <div className="chat-header__title">
-          <h1>Agent Chat</h1>
+          <h1>{meta.title}</h1>
           <Text as="span" variant="secondary" size="sm">
-            {MODEL_LABEL} · Workers AI · Think
+            {meta.subtitle}
           </Text>
         </div>
+        <nav className="chat-nav" aria-label="Agent runtime">
+          <ul>
+            {RUNTIMES.map(({ id, href, label }) => (
+              <li key={id}>
+                <a
+                  className="chat-nav__link"
+                  data-active={id === runtime || undefined}
+                  aria-current={id === runtime ? "page" : undefined}
+                  href={href}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
         <div className="chat-header__actions">
           <span
             className="chat-header__connection"
@@ -165,12 +223,10 @@ function App() {
             empty={
               <div className="chat-empty">
                 <Text as="h2" variant="heading2">
-                  Chat with an agent on Cloudflare
+                  {meta.heading}
                 </Text>
                 <Text as="p" variant="secondary">
-                  Ask about Workers AI — the agent (built on @cloudflare/think)
-                  can read the latest official documentation and stream a
-                  grounded answer in real time.
+                  {meta.copy}
                 </Text>
                 <div className="chat-suggestions">
                   {SUGGESTIONS.map((suggestion) => (

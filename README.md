@@ -72,7 +72,9 @@ The `ai` package is an optional peer dependency required only by the adapter ent
 | `ToolCall` | Tool execution status and approval actions |
 
 Run `pnpm storybook` for interactive examples, component states, and API documentation. The
-complete Cloudflare Think integration is in [`apps/playground`](./apps/playground).
+playground in [`apps/playground`](./apps/playground) demos two runtimes side by side: a classic
+Cloudflare Agents SDK `AIChatAgent` at `/agents-sdk` (also the default `/`) and an
+`@cloudflare/think` agent at `/think`.
 
 ## Development
 
@@ -90,8 +92,8 @@ headless Chrome, forces garbage collection through the Chrome DevTools Protocol,
 evicted message or payload instances—or mounted transcript nodes—remain retained. Set
 `CHROME_PATH` if Chrome or Chromium is not installed in a standard system location.
 
-The component package is in `packages/react`. The Cloudflare Think integration playground is in
-`apps/playground`.
+The component package is in `packages/react`. The playground demonstrating both the Cloudflare
+Agents SDK and Think integrations is in `apps/playground`.
 
 See [`ROADMAP.md`](./ROADMAP.md) for planned components, Cloudflare adapter work, and release requirements.
 

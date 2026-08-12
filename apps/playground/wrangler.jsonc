@@ -14,6 +14,10 @@
       {
         "name": "ToolDemoAgent",
         "class_name": "ToolDemoAgent"
+      },
+      {
+        "name": "ThinkDemoAgent",
+        "class_name": "ThinkDemoAgent"
       }
     ]
   },
@@ -21,6 +25,10 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["ToolDemoAgent"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["ThinkDemoAgent"]
     }
   ],
   "ai": {
